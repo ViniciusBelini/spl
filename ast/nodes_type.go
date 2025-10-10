@@ -10,8 +10,14 @@ type AssignNode struct{
 	Pos		int
 }
 
-type LiteralNode struct{
-	Value		int
+type IdentNode struct{
+	Name		string
+	Line		int
+	Pos		int
+}
+
+type StringLiteralNode struct{
+	Value		string
 	Line		int
 	Pos		int
 }

@@ -1,3 +1,5 @@
 {
-    "S1001": "[SyntaxError] Unexpected token"
+    "S1001": "[SyntaxError] Unexpected token",
+    "S1002": "[SyntaxError] Unexpected token, expected",
+    "S1003": "[SyntaxError] Unexpected token, missing variable name",
 }

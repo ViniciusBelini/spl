@@ -11,6 +11,7 @@ import(
 
 type Parser struct{
 	Tokens []models.Token
+	Ast []ast.Node
 	In int
 }
 
@@ -18,6 +19,7 @@ type Parser struct{
 func Astnize(allTokens []models.Token, fileName string) ast.Node{
 	p := Parser{
 		Tokens: allTokens,
+		Ast: nil,
 		In: 0,
 	}
 
@@ -26,22 +28,34 @@ func Astnize(allTokens []models.Token, fileName string) ast.Node{
 
 		switch tok.Type{
 			case models.TokenType:
-				p.VariableAssignment(fileName)
+				if p.VariableAssignment(fileName){
+					continue
+				}
+			case models.TokenIdent:
+				if p.VariableAssignment(fileName){
+					continue
+				}
+
+				p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
+				p.next()
+			case models.TokenString:
+				p.Ast = append(p.Ast, ast.StringLiteralNode{Value: tok.Value, Line: tok.Line, Pos: tok.Pos})
+				p.next()
 			default:
 				p.unexpected(fileName)
 		}
 	}
 
-	return ast.Debug{
-		Value: "asd",
-	}
+	return p.Ast
 }
 
 // peek, eof, next, back funcs
 func (p *Parser) peek() models.Token{return p.Tokens[p.In]}
 func (p *Parser) eof() bool{if p.In >= len(p.Tokens){return true}else{return false}}
-func (p *Parser) next() bool{if p.In+1 > len(p.Tokens){return false};p.In++;return true}
-func (p *Parser) back() bool{if p.In-1 <= 0{return false};p.In--;return true}
+// func (p *Parser) next() bool{if p.In+1 > len(p.Tokens){return false};p.In++;return true}
+func (p *Parser) next(){p.In++}
+// func (p *Parser) back() bool{if p.In-1 <= 0{return false};p.In--;return true}
+func (p *Parser) back(){p.In--}
 
 // ---
 // errors
