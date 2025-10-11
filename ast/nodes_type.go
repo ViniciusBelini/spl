@@ -6,6 +6,7 @@ type AssignNode struct{
 	Name		string
 	Type		string
 	Value		Node
+	Method		string
 	Line		int
 	Pos		int
 }
@@ -16,8 +17,15 @@ type IdentNode struct{
 	Pos		int
 }
 
-type StringLiteralNode struct{
+type LiteralNode struct{
 	Value		string
+	Type		string
+	Line		int
+	Pos		int
+}
+
+type NullNode struct{
+	Args		string
 	Line		int
 	Pos		int
 }

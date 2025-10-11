@@ -72,7 +72,7 @@ func readFileTokenize(fileName string) []models.Token{
 
 // run the program
 func run(allTokens []models.Token, fileName string) bool{
-	ast := parser.Astnize(allTokens, fileName)
+	ast := parser.Astnize(allTokens, fileName, "null")
 	fmt.Printf("%#v\n", ast)
 
 	return true

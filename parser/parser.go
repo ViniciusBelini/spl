@@ -13,14 +13,16 @@ type Parser struct{
 	Tokens []models.Token
 	Ast []ast.Node
 	In int
+	Inside string
 }
 
 // Main func ASTNIZE
-func Astnize(allTokens []models.Token, fileName string) ast.Node{
+func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 	p := Parser{
 		Tokens: allTokens,
 		Ast: nil,
 		In: 0,
+		Inside: inside,
 	}
 
 	for !p.eof(){
@@ -38,8 +40,8 @@ func Astnize(allTokens []models.Token, fileName string) ast.Node{
 
 				p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
 				p.next()
-			case models.TokenString:
-				p.Ast = append(p.Ast, ast.StringLiteralNode{Value: tok.Value, Line: tok.Line, Pos: tok.Pos})
+			case models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean:
+				p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
 				p.next()
 			default:
 				p.unexpected(fileName)

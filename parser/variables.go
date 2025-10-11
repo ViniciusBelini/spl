@@ -1,6 +1,8 @@
 package parser
 
 import(
+//	"fmt"
+
 	"SPL/models"
 	"SPL/ast"
 )
@@ -8,6 +10,7 @@ import(
 // Variable Assignment
 func (p *Parser) VariableAssignment(fileName string) bool{
 	tok := p.peek()
+	startIn := p.In
 
 	type VarData struct{
 		Type string
@@ -27,12 +30,20 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	if tok.Type == models.TokenType{
 		varData.Type = tok.Value
 		p.next()
+		if p.eof(){
+			p.unexpected(fileName)
+			return false
+		}
 		tok = p.peek()
 	}
 
 	if tok.Type == models.TokenIdent{
 		varData.Name = tok.Value
+
 		p.next()
+		if p.eof(){
+			return false
+		}
 		tok = p.peek()
 	}else{
 		p.generic("Unexpected token '"+tok.Value+"' ("+tok.Type+"), missing variable name", "S1003", fileName) // Error
@@ -41,17 +52,21 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 
 	if tok.Type != models.TokenAssign || (tok.Value != "=" && tok.Value != ":="){
 		// p.expected("one of '=', ':='", fileName) // Error
-		p.back()
+		p.In = startIn
 		return false
 	}
 
+	method := tok.Value
+
 	canBreakLine := true
 	returnBreakLine := 0
-	for !p.eof(){
+	for{
 		p.next()
-		if !p.eof(){
-			tok = p.peek()
+		if p.eof(){
+			break
 		}
+
+		tok = p.peek()
 
 		if (tok.Type == models.TokenNewLine || tok.Value == ";") && canBreakLine{
 			break
@@ -60,9 +75,8 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 		if tok.Value == "("{
 			canBreakLine = false
 			returnBreakLine++
-		}else if tok.Value == ")"{
+		} else if tok.Value == ")"{
 			returnBreakLine--
-
 			if returnBreakLine <= 0{
 				canBreakLine = true
 			}
@@ -74,7 +88,8 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	varAst := ast.AssignNode{
 		Name: varData.Name,
 		Type: varData.Type,
-		Value: Astnize(varData.Value, fileName),
+		Value: Astnize(varData.Value, fileName, varData.Name),
+		Method: method,
 		Line: varData.Line,
 		Pos: varData.Pos,
 	}
