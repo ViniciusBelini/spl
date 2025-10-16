@@ -1,7 +1,7 @@
 package parser
 
 import(
-//	"fmt"
+	// "fmt"
 
 	"SPL/models"
 	"SPL/ast"
@@ -112,16 +112,14 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	}
 
 	method := tok.Value
+	p.next()
 
 	canBreakLine := true
 	returnBreakLine := 0
-	for{
-		p.next()
-		if p.eof(){
-			break
-		}
-
+	for !p.eof(){
 		tok = p.peek()
+		p.next()
+
 
 		if (tok.Type == models.TokenNewLine || tok.Value == ";") && canBreakLine{
 			break

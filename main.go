@@ -5,6 +5,8 @@ import(
 	"os"
 	"bufio"
 
+	// "encoding/json"
+
 	"SPL/models"
 	"SPL/lexer"
 	"SPL/parser"
@@ -73,6 +75,8 @@ func readFileTokenize(fileName string) []models.Token{
 // run the program
 func run(allTokens []models.Token, fileName string) bool{
 	ast := parser.Astnize(allTokens, fileName, "null")
+
+	//jsonData, _ := json.MarshalIndent(ast, "", "   ")
 	fmt.Printf("%#v\n", ast)
 
 	return true

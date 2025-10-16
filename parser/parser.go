@@ -1,7 +1,7 @@
 package parser
 
 import(
-	"fmt"
+	// "fmt"
 	"strconv"
 
 	"SPL/lexer"
@@ -34,19 +34,20 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 				if p.VariableAssignment(fileName){
 					continue
 				}
-			case models.TokenIdent:
-				if p.VariableAssignment(fileName){
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
+				if tok.Type == models.TokenIdent && p.VariableAssignment(fileName){
 					continue
 				}
 
-				p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
-				p.next()
-			case models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
-				if p.ParseOperators(fileName){
+				if p.ParserLogical(fileName) || p.ParseOperators(fileName){
 					continue
 				}
 
-				p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
+				if tok.Type == models.TokenIdent{
+					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
+				}else{
+					p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
+				}
 				p.next()
 			default:
 				p.unexpected(fileName)
@@ -97,33 +98,128 @@ func (p *Parser) expected(token string, fileName string){
 	errors.ParserError(ParserErrorMsg, true)
 }
 
-// Perser Operators
-func (p *Parser) ParseOperators(fileName string) bool{
-	var stack []ast.Node
-	var operatorStack []string
-
+// Perser Logical
+func (p *Parser) ParserLogical(fileName string) bool{
 	if p.eof(){
 		return false
 	}
 
 	tok := p.peek()
 
+	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent{
+		return false
+	}
 
-	if tok.Type == models.TokenString || tok.Type == models.TokenNumber || tok.Type == models.TokenFloat{
+	var stack []ast.Node
+	var exprStack []models.Token
+	var logicalStack []string
+
+	startIn := p.In
+	for !p.eof(){
+		tok = p.peek()
+
+		switch tok.Type{
+			case models.TokenBinOp:
+				logicalStack = append(logicalStack, tok.Value)
+				currentAstTemp := Astnize(exprStack, fileName, p.Inside)
+				stack = append(stack, currentAstTemp)
+				exprStack = []models.Token{}
+				p.next()
+			default:
+				var currentAstTemp []models.Token
+				if tok.Type == models.TokenParentheses{
+					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
+				}else{
+					currentAstTemp = append(currentAstTemp, tok)
+				}
+				for i := 0;i < len(currentAstTemp);i++{
+					exprStack = append(exprStack, currentAstTemp[i])
+				}
+
+				if !p.canNext() && len(stack) >= 1{
+					currentAstTemp := Astnize(exprStack, fileName, p.Inside)
+					stack = append(stack, currentAstTemp)
+					exprStack = []models.Token{}
+				}
+				p.next()
+		}
+	}
+
+	if len(stack) < 2{
+		p.In = startIn
+		return false
+	}
+
+	for len(logicalStack) > 0{
+		maxPrec := -1
+		maxIndex := -1
+		for i, op := range logicalStack{
+			if precedence(op) > maxPrec{
+				maxPrec = precedence(op)
+				maxIndex = i
+			}
+		}
+
+		op := logicalStack[maxIndex]
+		logicalStack = append(logicalStack[:maxIndex], logicalStack[maxIndex+1:]...)
+
+		left := stack[maxIndex]
+		right := stack[maxIndex+1]
+
+		stack = append(stack[:maxIndex], stack[maxIndex+2:]...)
+
+		node := ast.BinaryOpNode{
+			Left:     left,
+			Right:    right,
+			Operator: op,
+			Line:     1,
+			Pos:      1,
+		}
+
+		stack = append(stack[:maxIndex], append([]ast.Node{node}, stack[maxIndex:]...)...)
+	}
+
+	if len(stack) == 1{
+		p.Ast = append(p.Ast, stack[0])
+	}else{
+		p.unexpected(fileName)
+	}
+
+	return true
+}
+
+// Perser Operators
+func (p *Parser) ParseOperators(fileName string) bool{
+	if p.eof(){
+		return false
+	}
+
+	tok := p.peek()
+
+	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent{
 		if !p.canNext() || p.peekNext().Type != models.TokenOperator{
 			return false
 		}
+	}else{
+		return false
 	}
+
+	var stack []ast.Node
+	var operatorStack []string
 
 	for !p.eof(){
 		tok = p.peek()
 
 		switch tok.Type{
-			case models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses:
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
 					currentAst = Astnize(currentAstTemp, fileName, p.Inside)
+				}else if tok.Type == models.TokenIdent{
+					currentAst = ast.IdentNode{
+						Name: tok.Value, Line: tok.Line, Pos: tok.Pos,
+					}
 				}else{
 					currentAst = ast.LiteralNode{
 						Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos,
@@ -139,7 +235,7 @@ func (p *Parser) ParseOperators(fileName string) bool{
 					break
 				}
 			case models.TokenOperator:
-				if p.canNext() && (p.peekNext().Type == models.TokenString || p.peekNext().Type == models.TokenNumber || p.peekNext().Type == models.TokenFloat || p.peekNext().Type == models.TokenParentheses){
+				if p.canNext() && (isLiteral(p.peekNext().Type) || p.peekNext().Type == models.TokenParentheses || p.peekNext().Type == models.TokenIdent){
 					operatorStack = append(operatorStack, tok.Value)
 					p.next()
 					continue
@@ -181,9 +277,6 @@ func (p *Parser) ParseOperators(fileName string) bool{
 		stack = append(stack[:maxIndex], append([]ast.Node{node}, stack[maxIndex:]...)...)
 	}
 
-	fmt.Println(stack)
-	fmt.Println(operatorStack)
-
 	if len(stack) == 1{
 		p.Ast = append(p.Ast, stack[0])
 	}else{
@@ -195,13 +288,33 @@ func (p *Parser) ParseOperators(fileName string) bool{
 
 // Operator precedence
 
-func precedence(op string) int{
-	switch op{
-	case "+", "-":
+func precedence(op string) int {
+	switch op {
+	case "||":
 		return 1
-	case "*", "/":
+	case "&&":
 		return 2
+	case "==", "!=":
+		return 3
+	case "<", ">", "<=", ">=":
+		return 4
+	case "+", "-":
+		return 5
+	case "*", "/", "%":
+		return 6
+	case "!", "++", "--", "-u":
+		return 7
 	default:
 		return 0
 	}
+}
+
+// Verify is literal
+
+func isLiteral(token string) bool{
+	if token == models.TokenString || token == models.TokenNumber || token == models.TokenFloat{
+		return true
+	}
+
+	return false
 }
