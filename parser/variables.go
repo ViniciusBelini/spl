@@ -12,6 +12,7 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	tok := p.peek()
 	startIn := p.In
 
+
 	type VarData struct{
 		Type string
 		Name string
@@ -51,7 +52,61 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	}
 
 	if tok.Type != models.TokenAssign || (tok.Value != "=" && tok.Value != ":="){
-		// p.expected("one of '=', ':='", fileName) // Error
+		if tok.Type == models.TokenAssign && (tok.Value == "++" || tok.Value == "--"){
+			p.back()
+			p.back()
+			if !p.sof(){
+				tok = p.peek()
+				if tok.Type == models.TokenType{
+					p.unexpected(fileName) // Error
+					return false
+				}
+			}
+			p.next()
+			p.next()
+
+			tok = p.peek()
+
+			method := "+"
+			if tok.Value == "++"{
+				method = "+"
+			}else{
+				method = "-"
+			}
+
+			varDataValue := ast.BinaryOpNode{
+				Left: ast.IdentNode{
+					Name: varData.Name,
+					Line: varData.Line,
+					Pos: varData.Pos,
+				},
+				Right: ast.LiteralNode{
+					Value: "1",
+					Type: "int",
+					Line: varData.Line,
+					Pos: varData.Pos,
+				},
+				Operator: method, Line: varData.Line, Pos: varData.Pos,
+			}
+
+			varAst := ast.AssignNode{
+				Name: varData.Name,
+				Type: varData.Type,
+				Value: varDataValue,
+				Method: method+method,
+				Line: varData.Line,
+				Pos: varData.Pos,
+			}
+
+			p.Ast = append(p.Ast, varAst)
+
+			p.next()
+
+			return true
+		}else if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "+="){
+
+		}
+
 		p.In = startIn
 		return false
 	}

@@ -24,6 +24,14 @@ type LiteralNode struct{
 	Pos		int
 }
 
+type BinaryOpNode struct{
+	Left		Node
+	Right		Node
+	Operator	string
+	Line		int
+	Pos		int
+}
+
 type NullNode struct{
 	Args		string
 	Line		int

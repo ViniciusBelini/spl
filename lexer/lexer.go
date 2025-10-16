@@ -21,7 +21,7 @@ func Tokenize(input string) []models.Token{
 		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>`)},
 		{models.TokenComment, regexp.MustCompile(`\/\/(.*?)$`)},
 		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
-		{models.TokenParentheses, regexp.MustCompile(`(\(|\))`)},
+		{models.TokenParentheses, regexp.MustCompile(`(\((.*?)\))`)},
 		{models.TokenBinOp, regexp.MustCompile(`(==|!==|===|<|>|>=|<=|<!|>!|and|or|\|\||&&|!)`)},
 		{models.TokenArrayAccess, regexp.MustCompile(`[a-zA-Z0-9_]+\[(.*?)\]`)},
 		{models.TokenNull, regexp.MustCompile(`null`)},
