@@ -3,7 +3,7 @@ package main
 import(
 	"fmt"
 	"os"
-	"bufio"
+	// "bufio"
 
 	// "encoding/json"
 
@@ -45,27 +45,33 @@ func main(){
 // input fileName read file and tokenize and return
 func readFileTokenize(fileName string) []models.Token{
 	var allTokens []models.Token
-
-	file, err := os.Open(fileName)
+	data, err := os.ReadFile(fileName)
 	if err != nil{
 		fmt.Printf("Error: %v\n", err)
 		return allTokens
 	}
-	defer file.Close()
+	allTokens = lexer.Tokenize(string(data))
 
-	scanner := bufio.NewScanner(file)
+	// file, err := os.Open(fileName)
+	// if err != nil{
+	// 	fmt.Printf("Error: %v\n", err)
+	// 	return allTokens
+	// }
+	// defer file.Close()
 
-	for scanner.Scan(){
-		line := scanner.Text()
+	// scanner := bufio.NewScanner(file)
 
-		tokens := lexer.Tokenize(line)
+	// for scanner.Scan(){
+	// 	line := scanner.Text()
 
-		// allTokens = append(allTokens, models.Token{Type: "NEW_LINE", Value: "null", Line: 0, Pos: 0})
-		allTokens = append(allTokens, tokens...)
-	}
-	if err := scanner.Err(); err != nil{
-		fmt.Printf("Error: %v\n", err)
-	}
+	// 	tokens := lexer.Tokenize(line)
+
+	// 	// allTokens = append(allTokens, models.Token{Type: "NEW_LINE", Value: "null", Line: 0, Pos: 0})
+	// 	allTokens = append(allTokens, tokens...)
+	// }
+	// if err := scanner.Err(); err != nil{
+	// 	fmt.Printf("Error: %v\n", err)
+	// }
 
 	// allTokens = append(allTokens, models.Token{Type: "NEW_LINE", Value: "null", Line: 0, Pos: 0})
 

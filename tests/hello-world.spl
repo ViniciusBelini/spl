@@ -1,1 +1,8 @@
-<bool> maiordeidade := 2025 - 2005 >= 18
+<int> born := 2005
+<int> year := 2025
+
+if year - born >= 18
+    // MORE THEN 18 YEARS OLD
+else
+    // LESS THEN 18 YEARS OLD
+end

@@ -11,6 +11,14 @@ type AssignNode struct{
 	Pos		int
 }
 
+type IfStatement struct{
+	Test		Node
+	Consequent	Node
+	Alternate	Node
+	Line		int
+	Pos		int
+}
+
 type IdentNode struct{
 	Name		string
 	Line		int

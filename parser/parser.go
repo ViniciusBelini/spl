@@ -30,9 +30,20 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 		tok := p.peek()
 
 		switch tok.Type{
+			case models.TokenNewLine:
+				p.next()
+				continue
 			case models.TokenType:
 				if p.VariableAssignment(fileName){
 					continue
+				}
+			case models.TokenIfStatement:
+				if tok.Value == "if"{
+					if p.IfStatement(fileName){
+						continue
+					}
+				}else{
+					p.unexpected(fileName)
 				}
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
 				if tok.Type == models.TokenIdent && p.VariableAssignment(fileName){
@@ -164,6 +175,10 @@ func (p *Parser) ParserLogical(fileName string) bool{
 		logicalStack = append(logicalStack[:maxIndex], logicalStack[maxIndex+1:]...)
 
 		left := stack[maxIndex]
+		if maxIndex+1 >= len(stack){
+			p.In = startIn
+			return false
+		}
 		right := stack[maxIndex+1]
 
 		stack = append(stack[:maxIndex], stack[maxIndex+2:]...)
@@ -287,7 +302,6 @@ func (p *Parser) ParseOperators(fileName string) bool{
 }
 
 // Operator precedence
-
 func precedence(op string) int {
 	switch op {
 	case "||":
@@ -310,9 +324,17 @@ func precedence(op string) int {
 }
 
 // Verify is literal
-
 func isLiteral(token string) bool{
 	if token == models.TokenString || token == models.TokenNumber || token == models.TokenFloat{
+		return true
+	}
+
+	return false
+}
+
+// Verify if is a bloc with END delimiter
+func hasEndDelimiter(token string) bool{
+	if token == "if"{
 		return true
 	}
 
