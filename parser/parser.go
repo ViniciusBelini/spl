@@ -1,7 +1,7 @@
 package parser
 
 import(
-	// "fmt"
+	"fmt"
 	"strconv"
 
 	"SPL/lexer"
@@ -30,6 +30,10 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 		tok := p.peek()
 
 		switch tok.Type{
+			case models.TokenObj, models.TokenArrayAccess, models.TokenCall:
+				fmt.Println(tok.Value)
+				p.next()
+				continue
 			case models.TokenNewLine:
 				p.next()
 				continue
@@ -56,6 +60,8 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
+				}else if tok.Type == models.TokenParentheses{
+					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1]), fileName, p.Inside).([]ast.Node)[0])
 				}else{
 					p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
 				}
@@ -132,7 +138,7 @@ func (p *Parser) ParserLogical(fileName string) bool{
 		switch tok.Type{
 			case models.TokenBinOp:
 				logicalStack = append(logicalStack, tok.Value)
-				currentAstTemp := Astnize(exprStack, fileName, p.Inside)
+				currentAstTemp := Astnize(exprStack, fileName, p.Inside).([]ast.Node)[0]
 				stack = append(stack, currentAstTemp)
 				exprStack = []models.Token{}
 				p.next()
@@ -148,7 +154,7 @@ func (p *Parser) ParserLogical(fileName string) bool{
 				}
 
 				if !p.canNext() && len(stack) >= 1{
-					currentAstTemp := Astnize(exprStack, fileName, p.Inside)
+					currentAstTemp := Astnize(exprStack, fileName, p.Inside).([]ast.Node)[0]
 					stack = append(stack, currentAstTemp)
 					exprStack = []models.Token{}
 				}
@@ -230,7 +236,7 @@ func (p *Parser) ParseOperators(fileName string) bool{
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
-					currentAst = Astnize(currentAstTemp, fileName, p.Inside)
+					currentAst = Astnize(currentAstTemp, fileName, p.Inside).([]ast.Node)[0]
 				}else if tok.Type == models.TokenIdent{
 					currentAst = ast.IdentNode{
 						Name: tok.Value, Line: tok.Line, Pos: tok.Pos,
@@ -316,8 +322,8 @@ func precedence(op string) int {
 		return 5
 	case "*", "/", "%":
 		return 6
-	case "!", "++", "--", "-u":
-		return 7
+	// case "!", "++", "--", "-u":
+	// 	return 7
 	default:
 		return 0
 	}

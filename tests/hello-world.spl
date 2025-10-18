@@ -1,8 +1,7 @@
-<int> born := 2005
 <int> year := 2025
 
-if year - born >= 18
-    // MORE THEN 18 YEARS OLD
+if year == 2026
+	<bool> finalYear := true
 else
-    // LESS THEN 18 YEARS OLD
+	<bool> finalYear := false
 end

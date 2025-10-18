@@ -11,7 +11,8 @@ const(
 	TokenComment		= "COMMENT"
 	TokenCall		= "CALL"
 	TokenParentheses	= "PARENTHESES"
-	TokenBinOp		= "BIN"
+	TokenBinOp		= "BINARY_OP"
+	TokenUnOp		= "UNARY_OP"
 	TokenArrayAccess	= "ARRAY"
 	TokenNull		= "NULL"
 	TokenIdent		= "IDENT"
@@ -19,5 +20,6 @@ const(
 	TokenOperator		= "OPERATOR"
 	TokenDelimiter		= "DELIMITER"
 	TokenSpace		= "SPACE"
+	TokenObj		= "OBJECT"
 	TokenUnknown		= "UNKNOWN"
 )

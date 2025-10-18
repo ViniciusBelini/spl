@@ -1,7 +1,7 @@
 package parser
 
 import(
-	"fmt"
+	// "fmt"
 
 	"SPL/models"
 	"SPL/ast"
@@ -113,12 +113,10 @@ func (p *Parser) IfStatement(fileName string) bool{
 		p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
 	}
 
-	fmt.Println(ifAlternate)
-
 	ifAst := ast.IfStatement{
-		Test: Astnize(ifExpr, fileName, "IfStatement"),
-		Consequent: Astnize(ifBlock, fileName, "IfStatement"),
-		Alternate: Astnize(ifAlternate, fileName, "IfStatement"),
+		Test: Astnize(ifExpr, fileName, "IfStatement").([]ast.Node)[0],
+		Consequent: Astnize(ifBlock, fileName, "IfStatement").([]ast.Node)[0],
+		Alternate: Astnize(ifAlternate, fileName, "IfStatement").([]ast.Node)[0],
 		Line: startLine,
 		Pos: startPos,
 	}

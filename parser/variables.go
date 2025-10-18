@@ -141,7 +141,7 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 	varAst := ast.AssignNode{
 		Name: varData.Name,
 		Type: varData.Type,
-		Value: Astnize(varData.Value, fileName, varData.Name),
+		Value: Astnize(varData.Value, fileName, varData.Name).([]ast.Node)[0],
 		Method: method,
 		Line: varData.Line,
 		Pos: varData.Pos,
