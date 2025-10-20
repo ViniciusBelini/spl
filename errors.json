@@ -2,6 +2,6 @@
     "S1001": "[SyntaxError] Unexpected token",
     "S1002": "[SyntaxError] Unexpected token, expected",
     "S1003": "[SyntaxError] Unexpected token, missing variable name",
-    "S1004": "[SyntaxError] Missing condition in 'if' statement",
+    "S1004": "[SyntaxError] Missing condition in statement",
     "S1005": "[SyntaxError] Missing 'end' of 'if' statement"
 }

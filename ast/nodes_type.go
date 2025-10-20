@@ -19,6 +19,16 @@ type IfStatement struct{
 	Pos		int
 }
 
+type LoopStatement struct{
+	Method		string
+	Init		Node
+	Test		Node
+	Update		Node
+	Consequent	Node
+	Line		int
+	Pos		int
+}
+
 type IdentNode struct{
 	Name		string
 	Line		int

@@ -8,10 +8,9 @@ import(
 )
 
 // Variable Assignment
-func (p *Parser) VariableAssignment(fileName string) bool{
+func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 	tok := p.peek()
 	startIn := p.In
-
 
 	type VarData struct{
 		Type string
@@ -28,12 +27,14 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 		Value: nil,
 	}
 
+	var varAst []ast.AssignNode
+
 	if tok.Type == models.TokenType{
 		varData.Type = tok.Value
 		p.next()
 		if p.eof(){
 			p.unexpected(fileName)
-			return false
+			return varAst
 		}
 		tok = p.peek()
 	}
@@ -43,12 +44,12 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 
 		p.next()
 		if p.eof(){
-			return false
+			return varAst
 		}
 		tok = p.peek()
 	}else{
 		p.generic("Unexpected token '"+tok.Value+"' ("+tok.Type+"), missing variable name", "S1003", fileName) // Error
-		return false
+		return varAst
 	}
 
 	if tok.Type != models.TokenAssign || (tok.Value != "=" && tok.Value != ":="){
@@ -59,7 +60,7 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 				tok = p.peek()
 				if tok.Type == models.TokenType{
 					p.unexpected(fileName) // Error
-					return false
+					return varAst
 				}
 			}
 			p.next()
@@ -89,26 +90,24 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 				Operator: method, Line: varData.Line, Pos: varData.Pos,
 			}
 
-			varAst := ast.AssignNode{
+			varAst = append(varAst, ast.AssignNode{
 				Name: varData.Name,
 				Type: varData.Type,
 				Value: varDataValue,
 				Method: method+method,
 				Line: varData.Line,
 				Pos: varData.Pos,
-			}
-
-			p.Ast = append(p.Ast, varAst)
+			})
 
 			p.next()
 
-			return true
+			return varAst
 		}else if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "+="){
-
+			// To do
 		}
 
 		p.In = startIn
-		return false
+		return varAst
 	}
 
 	method := tok.Value
@@ -138,16 +137,14 @@ func (p *Parser) VariableAssignment(fileName string) bool{
 		varData.Value = append(varData.Value, tok)
 	}
 
-	varAst := ast.AssignNode{
+	varAst = append(varAst, ast.AssignNode{
 		Name: varData.Name,
 		Type: varData.Type,
 		Value: Astnize(varData.Value, fileName, varData.Name).([]ast.Node)[0],
 		Method: method,
 		Line: varData.Line,
 		Pos: varData.Pos,
-	}
+	})
 
-	p.Ast = append(p.Ast, varAst)
-
-	return true
+	return varAst
 }

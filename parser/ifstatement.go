@@ -8,17 +8,20 @@ import(
 )
 
 // If Statement
-func (p *Parser) IfStatement(fileName string) bool{
+func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 	tok := p.peek()
 
 	if tok.Type != models.TokenIfStatement{
 		p.unexpected(fileName)
 	}
 
+	var ifAst []ast.IfStatement
+
 	startIn := p.In
 	startLine := tok.Line
 	startPos := tok.Pos
 
+	inlineExpr := false
 	exprType := tok.Value
 	var ifExpr []models.Token
 	p.next()
@@ -27,6 +30,10 @@ func (p *Parser) IfStatement(fileName string) bool{
 			tok = p.peek()
 
 			if tok.Type == models.TokenNewLine || tok.Value == ":"{
+				if tok.Value == ":"{
+					inlineExpr = true
+				}
+
 				break
 			}
 
@@ -38,6 +45,8 @@ func (p *Parser) IfStatement(fileName string) bool{
 			p.In = startIn
 			p.generic("Missing condition in 'if' statement", "S1004", fileName) // Error
 		}
+	}else{
+		p.unexpected(fileName) // Error
 	}
 	p.next()
 
@@ -54,8 +63,11 @@ func (p *Parser) IfStatement(fileName string) bool{
 				blockWithEnds++
 			}
 
-			if tok.Type == models.TokenDelimiter && tok.Value == "end"{
-				blockWithEnds--
+			if (tok.Type == models.TokenDelimiter && tok.Value == "end") || (inlineExpr && tok.Type == models.TokenDelimiter && tok.Value == ";"){
+				if (tok.Type == models.TokenDelimiter && tok.Value == "end") || (inlineExpr && tok.Type == models.TokenDelimiter && tok.Value == ";" && blockWithEnds == 1){
+					blockWithEnds--
+
+				}
 				if blockWithEnds == 0{
 					if full{
 						ifBlock = append(ifBlock, tok)
@@ -79,7 +91,11 @@ func (p *Parser) IfStatement(fileName string) bool{
 			if p.eof(){
 				p.back()
 			}
-			p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
+			if inlineExpr{
+				p.generic("[SyntaxError] Missing ';' of 'if' statement", "S1005", fileName) // Error
+			}else{
+				p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
+			}
 		}
 
 		return ifBlock
@@ -113,16 +129,23 @@ func (p *Parser) IfStatement(fileName string) bool{
 		p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
 	}
 
-	ifAst := ast.IfStatement{
-		Test: Astnize(ifExpr, fileName, "IfStatement").([]ast.Node)[0],
-		Consequent: Astnize(ifBlock, fileName, "IfStatement").([]ast.Node)[0],
-		Alternate: Astnize(ifAlternate, fileName, "IfStatement").([]ast.Node)[0],
-		Line: startLine,
-		Pos: startPos,
+	// useless
+	getFirst := func(nodes []ast.Node) ast.Node{
+		if len(nodes) > 0{
+			return nodes
+		}
+		return nil
 	}
+	// useless
 
-	p.Ast = append(p.Ast, ifAst)
+	ifAst = append(ifAst, ast.IfStatement{
+		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement").([]ast.Node)),
+		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement").([]ast.Node)),
+		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement").([]ast.Node)),
+		Line:       startLine,
+		Pos:        startPos,
+	})
 
 	p.next()
-	return true
+	return ifAst
 }

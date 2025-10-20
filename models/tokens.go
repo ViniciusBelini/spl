@@ -7,6 +7,7 @@ const(
 	TokenNumber		= "NUMBER"
 	TokenBoolean		= "BOOLEAN"
 	TokenIfStatement	= "IF_STATEMENT"
+	TokenLoopStatement	= "LOOP_STATEMENT"
 	TokenType		= "TYPE"
 	TokenComment		= "COMMENT"
 	TokenCall		= "CALL"

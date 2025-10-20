@@ -1,7 +1,5 @@
-<int> year := 2025
-
-if year == 2026
-	<bool> finalYear := true
-else
-	<bool> finalYear := false
+if 2 == 2
+    idade = 20
+    idade++
+    idade = 30
 end

@@ -1,7 +1,7 @@
 package parser
 
 import(
-	"fmt"
+	// "fmt"
 	"strconv"
 
 	"SPL/lexer"
@@ -31,32 +31,59 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 
 		switch tok.Type{
 			case models.TokenObj, models.TokenArrayAccess, models.TokenCall:
-				fmt.Println(tok.Value)
 				p.next()
 				continue
 			case models.TokenNewLine:
 				p.next()
 				continue
 			case models.TokenType:
-				if p.VariableAssignment(fileName){
+				pTemp := p
+				tempAST := p.VariableAssignment(fileName)
+				if len(tempAST) > 0{
+					p.Ast = append(p.Ast, tempAST[0])
 					continue
 				}
+				p = pTemp
 			case models.TokenIfStatement:
 				if tok.Value == "if"{
-					if p.IfStatement(fileName){
+					pTemp := p
+					tempAST := p.IfStatement(fileName)
+					if len(tempAST) > 0{
+						p.Ast = append(p.Ast, tempAST[0])
 						continue
 					}
+					p = pTemp
 				}else{
 					p.unexpected(fileName)
 				}
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
-				if tok.Type == models.TokenIdent && p.VariableAssignment(fileName){
-					continue
+			case models.TokenLoopStatement:
+				p.LoopStatementParser(fileName)
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenNull:
+				pTemp := p
+				if tok.Type == models.TokenIdent{
+					tempAST := p.VariableAssignment(fileName)
+					if len(tempAST) > 0{
+						p.Ast = append(p.Ast, tempAST[0])
+						continue
+					}
+					p = pTemp
 				}
 
-				if p.ParserLogical(fileName) || p.ParseOperators(fileName){
+				pTemp = p
+				tempAST2 := p.ParserLogical(fileName)
+				if len(tempAST2) > 0{
+					p.Ast = append(p.Ast, tempAST2[0])
 					continue
 				}
+				p = pTemp
+
+				pTemp = p
+				tempAST2 = p.ParseOperators(fileName)
+				if len(tempAST2) > 0{
+					p.Ast = append(p.Ast, tempAST2[0])
+					continue
+				}
+				p = pTemp
 
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
@@ -116,15 +143,17 @@ func (p *Parser) expected(token string, fileName string){
 }
 
 // Perser Logical
-func (p *Parser) ParserLogical(fileName string) bool{
+func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
+	var logicalAst []ast.BinaryOpNode
+
 	if p.eof(){
-		return false
+		return logicalAst
 	}
 
 	tok := p.peek()
 
 	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent{
-		return false
+		return logicalAst
 	}
 
 	var stack []ast.Node
@@ -164,7 +193,7 @@ func (p *Parser) ParserLogical(fileName string) bool{
 
 	if len(stack) < 2{
 		p.In = startIn
-		return false
+		return logicalAst
 	}
 
 	for len(logicalStack) > 0{
@@ -183,7 +212,7 @@ func (p *Parser) ParserLogical(fileName string) bool{
 		left := stack[maxIndex]
 		if maxIndex+1 >= len(stack){
 			p.In = startIn
-			return false
+			return logicalAst
 		}
 		right := stack[maxIndex+1]
 
@@ -201,28 +230,30 @@ func (p *Parser) ParserLogical(fileName string) bool{
 	}
 
 	if len(stack) == 1{
-		p.Ast = append(p.Ast, stack[0])
+		return []ast.BinaryOpNode{stack[0].(ast.BinaryOpNode)}
 	}else{
 		p.unexpected(fileName)
 	}
 
-	return true
+	return logicalAst
 }
 
 // Perser Operators
-func (p *Parser) ParseOperators(fileName string) bool{
+func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
+	var operatorsAst []ast.BinaryOpNode
+
 	if p.eof(){
-		return false
+		return operatorsAst
 	}
 
 	tok := p.peek()
 
 	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent{
 		if !p.canNext() || p.peekNext().Type != models.TokenOperator{
-			return false
+			return operatorsAst
 		}
 	}else{
-		return false
+		return operatorsAst
 	}
 
 	var stack []ast.Node
@@ -299,12 +330,12 @@ func (p *Parser) ParseOperators(fileName string) bool{
 	}
 
 	if len(stack) == 1{
-		p.Ast = append(p.Ast, stack[0])
+		return []ast.BinaryOpNode{stack[0].(ast.BinaryOpNode)}
 	}else{
 		p.unexpected(fileName)
 	}
 
-	return true
+	return operatorsAst // never reach here
 }
 
 // Operator precedence
