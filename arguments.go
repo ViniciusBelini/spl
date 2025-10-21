@@ -2,6 +2,8 @@ package main
 
 import(
 	"os"
+
+	"SPL/config"
 )
 
 func InterpretArgs(fileName string) bool{
@@ -27,7 +29,7 @@ func InterpretArgs(fileName string) bool{
 					return false
 				}
 
-				Config["mode"] = os.Args[i+1]
+				config.Config["mode"] = os.Args[i+1]
 
 				i += 2
 

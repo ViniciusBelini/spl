@@ -12,15 +12,6 @@ import(
 	"SPL/parser"
 )
 
-// Config var
-
-var Config = map[string]interface{}{
-	"mode":		"dynamic",		// dynamic - strict
-	"warnings":	true,
-	"version":	"0.0.0",
-	"name":		"Alpha",
-}
-
 // Main function - start point
 func main(){
 	// verifying arguments - must have minumum 2
@@ -80,7 +71,7 @@ func readFileTokenize(fileName string) []models.Token{
 
 // run the program
 func run(allTokens []models.Token, fileName string) bool{
-	ast := parser.Astnize(allTokens, fileName, "null")
+	ast := parser.Astnize(allTokens, fileName, "null", false)
 
 	//jsonData, _ := json.MarshalIndent(ast, "", "   ")
 	fmt.Printf("%#v\n", ast)

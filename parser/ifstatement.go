@@ -21,7 +21,6 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 	startLine := tok.Line
 	startPos := tok.Pos
 
-	inlineExpr := false
 	exprType := tok.Value
 	var ifExpr []models.Token
 	p.next()
@@ -30,10 +29,6 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 			tok = p.peek()
 
 			if tok.Type == models.TokenNewLine || tok.Value == ":"{
-				if tok.Value == ":"{
-					inlineExpr = true
-				}
-
 				break
 			}
 
@@ -63,11 +58,9 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 				blockWithEnds++
 			}
 
-			if (tok.Type == models.TokenDelimiter && tok.Value == "end") || (inlineExpr && tok.Type == models.TokenDelimiter && tok.Value == ";"){
-				if (tok.Type == models.TokenDelimiter && tok.Value == "end") || (inlineExpr && tok.Type == models.TokenDelimiter && tok.Value == ";" && blockWithEnds == 1){
-					blockWithEnds--
+			if tok.Type == models.TokenDelimiter && tok.Value == "end"{
+				blockWithEnds--
 
-				}
 				if blockWithEnds == 0{
 					if full{
 						ifBlock = append(ifBlock, tok)
@@ -91,11 +84,8 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 			if p.eof(){
 				p.back()
 			}
-			if inlineExpr{
-				p.generic("[SyntaxError] Missing ';' of 'if' statement", "S1005", fileName) // Error
-			}else{
-				p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
-			}
+
+			p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
 		}
 
 		return ifBlock
@@ -139,9 +129,9 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 	// useless
 
 	ifAst = append(ifAst, ast.IfStatement{
-		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement").([]ast.Node)),
-		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement").([]ast.Node)),
-		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement").([]ast.Node)),
+		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement", true).([]ast.Node)),
+		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement", true).([]ast.Node)),
+		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement", true).([]ast.Node)),
 		Line:       startLine,
 		Pos:        startPos,
 	})

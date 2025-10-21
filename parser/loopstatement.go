@@ -29,19 +29,18 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 	tok := p.peek()
 
 	var loopAst []ast.LoopStatement
+
 	startIn := p.In
+	startLine := tok.Line
+	startPos := tok.Pos
+
 	var loopExpr []models.Token
-	//inlineExpr := false
 	if tok.Type == models.TokenLoopStatement && tok.Value == "while"{
 		p.next()
 		for !p.eof(){
 			tok = p.peek()
 
 			if tok.Type == models.TokenNewLine || tok.Value == ":"{
-				if tok.Value == ":"{
-					//inlineExpr := true
-				}
-
 				break
 			}
 
@@ -58,7 +57,24 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 	}
 	p.next()
 
-	//loopBlock := p.GetBlock(fileName)
+	loopBlock := p.GetBlock(fileName, "while")
+
+	if len(loopBlock) == 0{
+		p.In = startIn
+		p.generic("[SyntaxError] Missing 'end' of 'while' statement", "S1005", fileName) // Error
+	}
+
+	loopAst = append(loopAst, ast.LoopStatement{
+		Method:		"while",
+		Init:		nil,
+		Test:		Astnize(loopExpr, fileName, "LoopStatement", true).([]ast.Node),
+		Update:		nil,
+		Consequent:	Astnize(loopBlock, fileName, "LoopStatement", true).([]ast.Node),
+		Line:		startLine,
+		Pos:		startPos,
+	})
+
+	p.next()
 
 	return loopAst
 }

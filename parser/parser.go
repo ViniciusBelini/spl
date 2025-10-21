@@ -4,6 +4,7 @@ import(
 	// "fmt"
 	"strconv"
 
+	"SPL/config"
 	"SPL/lexer"
 	"SPL/models"
 	"SPL/ast"
@@ -18,7 +19,7 @@ type Parser struct{
 }
 
 // Main func ASTNIZE
-func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
+func Astnize(allTokens []models.Token, fileName string, inside string, statementExpr bool) ast.Node{
 	p := Parser{
 		Tokens: allTokens,
 		Ast: nil,
@@ -39,20 +40,22 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 			case models.TokenType:
 				pTemp := p
 				tempAST := p.VariableAssignment(fileName)
-				if len(tempAST) > 0{
+				if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 					p.Ast = append(p.Ast, tempAST[0])
 					continue
 				}
 				p = pTemp
+				p.unexpected(fileName)
 			case models.TokenIfStatement:
 				if tok.Value == "if"{
 					pTemp := p
 					tempAST := p.IfStatement(fileName)
-					if len(tempAST) > 0{
+					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 						p.Ast = append(p.Ast, tempAST[0])
 						continue
 					}
 					p = pTemp
+					p.unexpected(fileName)
 				}else{
 					p.unexpected(fileName)
 				}
@@ -62,7 +65,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 				pTemp := p
 				if tok.Type == models.TokenIdent{
 					tempAST := p.VariableAssignment(fileName)
-					if len(tempAST) > 0{
+					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 						p.Ast = append(p.Ast, tempAST[0])
 						continue
 					}
@@ -71,7 +74,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 
 				pTemp = p
 				tempAST2 := p.ParserLogical(fileName)
-				if len(tempAST2) > 0{
+				if len(tempAST2) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 					p.Ast = append(p.Ast, tempAST2[0])
 					continue
 				}
@@ -79,7 +82,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 
 				pTemp = p
 				tempAST2 = p.ParseOperators(fileName)
-				if len(tempAST2) > 0{
+				if len(tempAST2) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 					p.Ast = append(p.Ast, tempAST2[0])
 					continue
 				}
@@ -88,7 +91,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string) ast.Node{
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
 				}else if tok.Type == models.TokenParentheses{
-					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1]), fileName, p.Inside).([]ast.Node)[0])
+					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1]), fileName, p.Inside, statementExpr).([]ast.Node)[0])
 				}else{
 					p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
 				}
@@ -167,7 +170,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 		switch tok.Type{
 			case models.TokenBinOp:
 				logicalStack = append(logicalStack, tok.Value)
-				currentAstTemp := Astnize(exprStack, fileName, p.Inside).([]ast.Node)[0]
+				currentAstTemp := Astnize(exprStack, fileName, p.Inside, true).([]ast.Node)[0]
 				stack = append(stack, currentAstTemp)
 				exprStack = []models.Token{}
 				p.next()
@@ -183,7 +186,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 				}
 
 				if !p.canNext() && len(stack) >= 1{
-					currentAstTemp := Astnize(exprStack, fileName, p.Inside).([]ast.Node)[0]
+					currentAstTemp := Astnize(exprStack, fileName, p.Inside, true).([]ast.Node)[0]
 					stack = append(stack, currentAstTemp)
 					exprStack = []models.Token{}
 				}
@@ -267,7 +270,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
-					currentAst = Astnize(currentAstTemp, fileName, p.Inside).([]ast.Node)[0]
+					currentAst = Astnize(currentAstTemp, fileName, p.Inside, true).([]ast.Node)[0]
 				}else if tok.Type == models.TokenIdent{
 					currentAst = ast.IdentNode{
 						Name: tok.Value, Line: tok.Line, Pos: tok.Pos,
@@ -371,7 +374,7 @@ func isLiteral(token string) bool{
 
 // Verify if is a bloc with END delimiter
 func hasEndDelimiter(token string) bool{
-	if token == "if"{
+	if token == "if" || token == "while"{
 		return true
 	}
 
