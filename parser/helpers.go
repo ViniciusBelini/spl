@@ -24,9 +24,6 @@ func (p *Parser) GetBlock(fileName string, method string) []models.Token{
 			blockWithEnds--
 
 			if blockWithEnds == 0{
-				// if full{
-				// 	varBlock = append(varBlock, tok)
-				// }
 				break
 			}
 		}

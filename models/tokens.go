@@ -6,6 +6,7 @@ const(
 	TokenFloat		= "FLOAT"
 	TokenNumber		= "NUMBER"
 	TokenBoolean		= "BOOLEAN"
+	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"
 	TokenType		= "TYPE"

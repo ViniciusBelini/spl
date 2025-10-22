@@ -9,13 +9,16 @@ import(
 
 // If Statement
 func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
+	var ifAst []ast.IfStatement
+
+	if p.eof(){
+		return ifAst
+	}
 	tok := p.peek()
 
 	if tok.Type != models.TokenIfStatement{
 		p.unexpected(fileName)
 	}
-
-	var ifAst []ast.IfStatement
 
 	startIn := p.In
 	startLine := tok.Line
@@ -91,9 +94,10 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 		return ifBlock
 	}
 
-	if !p.eof(){
-		tok = p.peek()
+	if p.eof(){
+		return ifAst
 	}
+	tok = p.peek()
 
 	ifBlock := loopGetBlock(false)
 

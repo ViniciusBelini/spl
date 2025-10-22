@@ -41,7 +41,7 @@ func readFileTokenize(fileName string) []models.Token{
 		fmt.Printf("Error: %v\n", err)
 		return allTokens
 	}
-	allTokens = lexer.Tokenize(string(data))
+	allTokens = lexer.Tokenize(string(data), fileName)
 
 	// file, err := os.Open(fileName)
 	// if err != nil{

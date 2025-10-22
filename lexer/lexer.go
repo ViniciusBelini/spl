@@ -1,34 +1,37 @@
 package lexer
 
 import(
-	// "fmt"
+	"fmt"
 	"regexp"
+	"strconv"
 
+	"SPL/errors"
 	"SPL/models"
 )
 
-func Tokenize(input string) []models.Token{
+func Tokenize(input string, fileName string) []models.Token{
 	patterns := []struct{
 		Type string
 		Re *regexp.Regexp
 	}{
 		{models.TokenComment, regexp.MustCompile(`(\/\/|\/\*|\*\/)`)},
 		{models.TokenNewLine, regexp.MustCompile(`\r?\n`)},
-		{models.TokenString, regexp.MustCompile(`"((?:\\.|[^"\\])*)"`)},
-		{models.TokenString, regexp.MustCompile(`'((?:\\.|[^'\\])*)'`)},
+		{"QUOTE", regexp.MustCompile(`("|')`)},
+		{"BACK_SLASH", regexp.MustCompile(`\\`)},
 		{models.TokenFloat, regexp.MustCompile(`[0-9]+\.[0-9]+`)},
 		{models.TokenNumber, regexp.MustCompile(`[0-9]+`)},
 		{models.TokenBoolean, regexp.MustCompile(`(true|false)`)},
+		{models.TokenControlFlow, regexp.MustCompile(`(break|continue|return)`)},
 		{models.TokenIfStatement, regexp.MustCompile(`(if|else)`)},
 		{models.TokenLoopStatement, regexp.MustCompile(`(while)`)},
 		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>`)},
 		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
-		{models.TokenParentheses, regexp.MustCompile(`(\((.*?)\))`)},
+		{"PARENTHESE", regexp.MustCompile(`(\(|\))`)},
 		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|and|or|\|\||&&)`)},
-		{models.TokenArrayAccess, regexp.MustCompile(`([a-zA-Z0-9_]+)([\[(.*?)\]]+)`)},
+		// {models.TokenArrayAccess, regexp.MustCompile(`([a-zA-Z0-9_]+)([\[(.*?)\]]+)`)},
 		{models.TokenNull, regexp.MustCompile(`null`)},
 		{models.TokenAssign, regexp.MustCompile(`(=|:=|-=|\+=|--|\+\+)`)},
-		{models.TokenOperator, regexp.MustCompile(`[+\-*/]`)},
+		{models.TokenOperator, regexp.MustCompile(`[+\-*/%]`)},
 		{models.TokenUnOp, regexp.MustCompile(`(!|\+|-)`)},
 		{models.TokenDelimiter, regexp.MustCompile(`(;|end|:)`)},
 		{models.TokenObj, regexp.MustCompile(`\b[a-zA-Z_]\w*(?:\.\w+|(\[|\()\w*(\]|\)))+`)},
@@ -43,6 +46,8 @@ func Tokenize(input string) []models.Token{
 	pos := 1
 	running := true
 	broken := ""
+	tempLine := 1
+	tempPos := 1
 	for i < len(input){
 		match := false
 		for _, p := range patterns{
@@ -52,24 +57,23 @@ func Tokenize(input string) []models.Token{
 				if p.Type == models.TokenComment{
 					if running && val == "//" || val == "/*"{
 						running = false
-						broken = val
+						broken = "COMMENT"
 					}
 				}
 
-				if !running && p.Type == models.TokenNewLine && broken == "//"{
+				if !running && p.Type == models.TokenNewLine && broken == "COMMENT"{
 					running = true
 					broken = ""
-				}else if !running && p.Type == models.TokenComment && val == "*/"{
+				}else if !running && p.Type == models.TokenComment && val == "*/" && broken == "COMMENT"{
 					running = true
 					broken = ""
 				}
 
 				if p.Type == models.TokenNewLine{
-					val = "null"
 					line++
 				}
 
-				if p.Type != models.TokenSpace && running{
+				if running{
 					tokens = append(tokens, models.Token{p.Type, val, line, pos})
 				}
 
@@ -80,9 +84,102 @@ func Tokenize(input string) []models.Token{
 				break
 			}
 		}
-		if !match{
-			panic("Undexpected character: " + string(input[i]))
+		if(!running){
+			if broken == "QUOTE"{
+				errors.ParserError("[SyntaxError] Unterminated string literal starting at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
+			}else if broken == "PARENTHESES"{
+				errors.ParserError("[SyntaxError] Expected ')' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
+			}else{
+				errors.ParserError("[SyntaxError] Unexpected token at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
+			}
+		}else if !match{
+			errors.ParserError("Undexpected character: " + string(input[i]), true)
 		}
 	}
-	return tokens
+
+	running = true
+	runner := map[string]string{
+		"breaker": "null",
+		"helper": "null",
+		"helper_2": "null",
+	}
+	tempLine = 1
+	tempPos = 1
+	tempOnce := 0
+	var n_tokens []models.Token
+	for i = 0;i < len(tokens);i++{
+		tok := tokens[i]
+
+		if running || running == false && runner["breaker"] == "QUOTE"{
+			if running && tok.Type == "QUOTE"{
+				running = false
+				runner["breaker"] = "QUOTE"
+				runner["helper"] = tok.Value
+				runner["helper_2"] = tok.Value
+				tempLine = tok.Line
+				tempPos = tok.Pos
+				continue
+			}
+
+			if !running{
+				if tok.Type == "BACK_SLASH" && i+1 < len(tokens) && tokens[i+1].Type == "QUOTE" && runner["helper_2"] == tokens[i+1].Value{
+					continue
+				}
+				runner["helper"] += tok.Value
+				if tok.Type == "QUOTE" && runner["helper_2"] == tok.Value{
+					if i-1 >= 0 && tokens[i-1].Type == "BACK_SLASH"{
+						continue
+					}
+					fmt.Println(runner["helper"])
+					running = true
+					n_tokens = append(n_tokens, models.Token{models.TokenString, runner["helper"], tempLine, tempPos})
+				}
+				continue
+			}
+		}
+
+		if running || running == false && runner["breaker"] == "PARENTHESE"{
+			if running && tok.Type == "PARENTHESE" && tok.Value == "("{
+				running = false
+				runner["breaker"] = "PARENTHESE"
+				runner["helper"] = tok.Value
+				runner["helper_2"] = tok.Value
+				tempLine = tok.Line
+				tempPos = tok.Pos
+				tempOnce = 1
+				continue
+			}
+
+			if !running{
+				runner["helper"] += tok.Value
+				if tok.Type == "PARENTHESE" && tok.Value == "("{
+					tempOnce++
+				}else if tok.Type == "PARENTHESE" && tok.Value == ")"{
+					tempOnce--
+
+					if tempOnce == 0{
+						running = true
+						n_tokens = append(n_tokens, models.Token{models.TokenParentheses, runner["helper"], tempLine, tempPos})
+					}
+				}
+				continue
+			}
+		}
+
+		if running && tok.Type != models.TokenSpace{
+			n_tokens = append(n_tokens, models.Token{tok.Type, tok.Value, tok.Line, tok.Pos})
+		}
+	}
+
+	if(!running){
+		if runner["breaker"] == "QUOTE"{
+			errors.ParserError("[SyntaxError] Unterminated string literal starting at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
+		}else if runner["breaker"] == "PARENTHESE"{
+			errors.ParserError("[SyntaxError] Expected ')' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
+		}else{
+			errors.ParserError("[SyntaxError] Unexpected token at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
+		}
+	}
+
+	return n_tokens
 }

@@ -8,17 +8,18 @@ import(
 )
 
 // Loop Statement Parser
-func (p *Parser) LoopStatementParser(fileName string){
+func (p *Parser) LoopStatementParser(fileName string, statementExpr bool){
 	tok := p.peek()
 
 	switch tok.Value{
 		case "while":
 			pTemp := p
 			tempAST := p.WhileStatement(fileName)
-			if len(tempAST) > 0{
+			if len(tempAST) > 0 && !statementExpr{
 				p.Ast = append(p.Ast, tempAST[0])
 			}
 			p = pTemp
+			p.unexpected(fileName)
 		default:
 			p.unexpected(fileName)
 	}

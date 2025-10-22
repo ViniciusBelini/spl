@@ -43,6 +43,9 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 					p.Ast = append(p.Ast, tempAST[0])
 					continue
+				}else if len(tempAST) > 0{
+					p.back()
+					p.generic("[SyntaxError] '=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
 				}
 				p = pTemp
 				p.unexpected(fileName)
@@ -50,7 +53,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				if tok.Value == "if"{
 					pTemp := p
 					tempAST := p.IfStatement(fileName)
-					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
+					if len(tempAST) > 0 && !statementExpr{
 						p.Ast = append(p.Ast, tempAST[0])
 						continue
 					}
@@ -60,7 +63,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					p.unexpected(fileName)
 				}
 			case models.TokenLoopStatement:
-				p.LoopStatementParser(fileName)
+				p.LoopStatementParser(fileName, statementExpr)
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenNull:
 				pTemp := p
 				if tok.Type == models.TokenIdent{
@@ -68,6 +71,9 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 						p.Ast = append(p.Ast, tempAST[0])
 						continue
+					}else if len(tempAST) > 0{
+						p.back()
+						p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
 					}
 					p = pTemp
 				}
@@ -91,7 +97,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
 				}else if tok.Type == models.TokenParentheses{
-					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1]), fileName, p.Inside, statementExpr).([]ast.Node)[0])
+					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName), fileName, p.Inside, statementExpr).([]ast.Node)[0])
 				}else{
 					p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
 				}
@@ -177,7 +183,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 			default:
 				var currentAstTemp []models.Token
 				if tok.Type == models.TokenParentheses{
-					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
+					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName)
 				}else{
 					currentAstTemp = append(currentAstTemp, tok)
 				}
@@ -269,7 +275,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses:
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
-					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1])
+					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName)
 					currentAst = Astnize(currentAstTemp, fileName, p.Inside, true).([]ast.Node)[0]
 				}else if tok.Type == models.TokenIdent{
 					currentAst = ast.IdentNode{
