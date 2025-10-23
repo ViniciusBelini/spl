@@ -50,8 +50,14 @@ type BinaryOpNode struct{
 	Pos		int
 }
 
+type ControlFlowNode struct{
+	Method		string
+	Argument	Node
+	Line		int
+	Pos		int
+}
+
 type NullNode struct{
-	Args		string
 	Line		int
 	Pos		int
 }

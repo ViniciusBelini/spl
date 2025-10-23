@@ -3,6 +3,7 @@ package parser
 import(
 	// "fmt"
 	"strconv"
+	// "runtime"
 
 	"SPL/config"
 	"SPL/lexer"
@@ -31,6 +32,15 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 		tok := p.peek()
 
 		switch tok.Type{
+			case models.TokenControlFlow:
+				pTemp := p
+				tempAST := p.ControlFlow(fileName)
+				if len(tempAST) > 0 && !statementExpr{
+					p.Ast = append(p.Ast, tempAST[0])
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
 			case models.TokenObj, models.TokenArrayAccess, models.TokenCall:
 				p.next()
 				continue
@@ -47,6 +57,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					p.back()
 					p.generic("[SyntaxError] '=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
 				}
+				// REMIDER: allow variable declaration without value `<int> age;` - ; is optional
 				p = pTemp
 				p.unexpected(fileName)
 			case models.TokenIfStatement:
@@ -64,7 +75,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 			case models.TokenLoopStatement:
 				p.LoopStatementParser(fileName, statementExpr)
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenNull:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
 				pTemp := p
 				if tok.Type == models.TokenIdent{
 					tempAST := p.VariableAssignment(fileName)
@@ -78,9 +89,10 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					p = pTemp
 				}
 
+
 				pTemp = p
 				tempAST2 := p.ParserLogical(fileName)
-				if len(tempAST2) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
+				if len(tempAST2) > 0{
 					p.Ast = append(p.Ast, tempAST2[0])
 					continue
 				}
@@ -88,7 +100,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 
 				pTemp = p
 				tempAST2 = p.ParseOperators(fileName)
-				if len(tempAST2) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
+				if len(tempAST2) > 0{
 					p.Ast = append(p.Ast, tempAST2[0])
 					continue
 				}
@@ -97,10 +109,13 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
 				}else if tok.Type == models.TokenParentheses{
-					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName), fileName, p.Inside, statementExpr).([]ast.Node)[0])
+					p.Ast = append(p.Ast, Astnize(lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos), fileName, p.Inside, statementExpr).([]ast.Node)[0])
 				}else{
 					p.Ast = append(p.Ast, ast.LiteralNode{Value: tok.Value, Type: tok.Type, Line: tok.Line, Pos: tok.Pos})
 				}
+				p.next()
+			case models.TokenNull:
+				p.Ast = append(p.Ast, ast.NullNode{Line: tok.Line, Pos: tok.Pos,})
 				p.next()
 			default:
 				p.unexpected(fileName)
@@ -126,6 +141,15 @@ func (p *Parser) canBack() bool{if p.In-1 >= 0{return true};return false}
 // ---
 // errors
 func (p *Parser) unexpected(fileName string){
+	// file, lineC, line, ok := runtime.Caller(1)
+	// if ok {
+	// 	fmt.Println(file)
+	// 	fmt.Println(lineC)
+	// 	fmt.Println(line)
+	// } else {
+	// 	fmt.Println("Ooops!")
+	// }
+
 	ParserErrorMsg := "[SyntaxError] Unexpected token at "+fileName+" [S1001]" // Error
 
 	if !p.eof(){
@@ -183,7 +207,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 			default:
 				var currentAstTemp []models.Token
 				if tok.Type == models.TokenParentheses{
-					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName)
+					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
 				}else{
 					currentAstTemp = append(currentAstTemp, tok)
 				}
@@ -275,7 +299,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses:
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
-					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName)
+					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
 					currentAst = Astnize(currentAstTemp, fileName, p.Inside, true).([]ast.Node)[0]
 				}else if tok.Type == models.TokenIdent{
 					currentAst = ast.IdentNode{
@@ -385,4 +409,55 @@ func hasEndDelimiter(token string) bool{
 	}
 
 	return false
+}
+
+// Control flow
+func (p *Parser) ControlFlow(fileName string) []ast.ControlFlowNode{
+	var flowAst []ast.ControlFlowNode
+
+	if p.eof(){
+		return flowAst
+	}
+
+	tok := p.peek()
+
+	tempLinePos := map[string]int{
+		"line": tok.Line,
+		"pos": tok.Pos,
+	}
+	switch tok.Value{
+		case "continue", "break":
+			method := tok.Value
+			if p.Inside == "LoopStatement"{
+				var controlTokens []models.Token
+				p.next()
+				for !p.eof(){
+					tok = p.peek()
+
+					if tok.Type == models.TokenNewLine{
+						break
+					}
+
+					controlTokens = append(controlTokens, tok)
+					p.next()
+				}
+
+				controlAstVerify := Astnize(controlTokens, fileName, "LoopStatement", true).([]ast.Node)
+				var controlAst ast.Node
+				if len(controlAstVerify) == 0{
+					controlAst = ast.NullNode{Line: tempLinePos["line"], Pos: tempLinePos["pos"],}
+				}else{
+					controlAst = controlAstVerify
+				}
+
+				flowAst = append(flowAst, ast.ControlFlowNode{Method: method, Argument: controlAst, Line: tempLinePos["line"], Pos: tempLinePos["pos"],})
+				return flowAst
+			}else{
+				p.generic("'"+tok.Value+"' cannot be used outside of a loop statement", "S1010", fileName)
+			}
+		default:
+			return flowAst
+	}
+
+	return flowAst
 }

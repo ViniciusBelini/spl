@@ -3,6 +3,7 @@ package parser
 import(
 	// "fmt"
 
+	"SPL/config"
 	"SPL/models"
 	"SPL/ast"
 )
@@ -137,10 +138,22 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		varData.Value = append(varData.Value, tok)
 	}
 
+	varValueVerify := Astnize(varData.Value, fileName, varData.Name, true).([]ast.Node)
+	var varValue ast.Node
+	if len(varValueVerify) == 0{
+		if config.Config["mode"] == "strict"{
+			p.back()
+			p.generic("Variable declaration must have an initial value in strict mode", "S1009", fileName) // Error
+		}
+		varValue = ast.NullNode{Line: varData.Line, Pos: varData.Pos,}
+	}else{
+		varValue = varValueVerify
+	}
+
 	varAst = append(varAst, ast.AssignNode{
 		Name: varData.Name,
 		Type: varData.Type,
-		Value: Astnize(varData.Value, fileName, varData.Name, true).([]ast.Node)[0],
+		Value: varValue,
 		Method: method,
 		Line: varData.Line,
 		Pos: varData.Pos,

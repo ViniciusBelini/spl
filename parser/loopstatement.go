@@ -17,6 +17,7 @@ func (p *Parser) LoopStatementParser(fileName string, statementExpr bool){
 			tempAST := p.WhileStatement(fileName)
 			if len(tempAST) > 0 && !statementExpr{
 				p.Ast = append(p.Ast, tempAST[0])
+				return
 			}
 			p = pTemp
 			p.unexpected(fileName)
@@ -65,12 +66,22 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 		p.generic("[SyntaxError] Missing 'end' of 'while' statement", "S1005", fileName) // Error
 	}
 
+	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
+		if len(nodes) > 0{
+			if returnFr{
+				return nodes[0]
+			}
+			return nodes
+		}
+		return nil
+	}
+
 	loopAst = append(loopAst, ast.LoopStatement{
 		Method:		"while",
 		Init:		nil,
-		Test:		Astnize(loopExpr, fileName, "LoopStatement", true).([]ast.Node),
+		Test:		getFirst(Astnize(loopExpr, fileName, "LoopStatement", true).([]ast.Node), true),
 		Update:		nil,
-		Consequent:	Astnize(loopBlock, fileName, "LoopStatement", true).([]ast.Node),
+		Consequent:	getFirst(Astnize(loopBlock, fileName, "LoopStatement", false).([]ast.Node), false),
 		Line:		startLine,
 		Pos:		startPos,
 	})

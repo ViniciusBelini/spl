@@ -9,7 +9,7 @@ import(
 	"SPL/models"
 )
 
-func Tokenize(input string, fileName string) []models.Token{
+func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 	patterns := []struct{
 		Type string
 		Re *regexp.Regexp
@@ -20,20 +20,19 @@ func Tokenize(input string, fileName string) []models.Token{
 		{"BACK_SLASH", regexp.MustCompile(`\\`)},
 		{models.TokenFloat, regexp.MustCompile(`[0-9]+\.[0-9]+`)},
 		{models.TokenNumber, regexp.MustCompile(`[0-9]+`)},
-		{models.TokenBoolean, regexp.MustCompile(`(true|false)`)},
-		{models.TokenControlFlow, regexp.MustCompile(`(break|continue|return)`)},
-		{models.TokenIfStatement, regexp.MustCompile(`(if|else)`)},
-		{models.TokenLoopStatement, regexp.MustCompile(`(while)`)},
+		{models.TokenBoolean, regexp.MustCompile(`(\btrue\b|\bfalse\b)`)},
+		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
+		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse\b)`)},
+		{models.TokenLoopStatement, regexp.MustCompile(`(\bwhile\b)`)},
 		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>`)},
 		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
 		{"PARENTHESE", regexp.MustCompile(`(\(|\))`)},
-		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|and|or|\|\||&&)`)},
-		// {models.TokenArrayAccess, regexp.MustCompile(`([a-zA-Z0-9_]+)([\[(.*?)\]]+)`)},
-		{models.TokenNull, regexp.MustCompile(`null`)},
+		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|\|\||&&)`)},
+		{models.TokenNull, regexp.MustCompile(`\bnull\b`)},
 		{models.TokenAssign, regexp.MustCompile(`(=|:=|-=|\+=|--|\+\+)`)},
 		{models.TokenOperator, regexp.MustCompile(`[+\-*/%]`)},
 		{models.TokenUnOp, regexp.MustCompile(`(!|\+|-)`)},
-		{models.TokenDelimiter, regexp.MustCompile(`(;|end|:)`)},
+		{models.TokenDelimiter, regexp.MustCompile(`(;|\bend\b|:)`)},
 		{models.TokenObj, regexp.MustCompile(`\b[a-zA-Z_]\w*(?:\.\w+|(\[|\()\w*(\]|\)))+`)},
 		{models.TokenIdent, regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`)},
 		{models.TokenSpace, regexp.MustCompile(`\s+`)},
@@ -42,8 +41,6 @@ func Tokenize(input string, fileName string) []models.Token{
 
 	tokens := []models.Token{}
 	i := 0
-	line := 1
-	pos := 1
 	running := true
 	broken := ""
 	tempLine := 1

@@ -123,19 +123,20 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 		p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
 	}
 
-	// useless
-	getFirst := func(nodes []ast.Node) ast.Node{
+	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
 		if len(nodes) > 0{
+			if returnFr{
+				return nodes[0]
+			}
 			return nodes
 		}
 		return nil
 	}
-	// useless
 
 	ifAst = append(ifAst, ast.IfStatement{
-		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement", true).([]ast.Node)),
-		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement", true).([]ast.Node)),
-		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement", true).([]ast.Node)),
+		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement", true).([]ast.Node), true),
+		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement", false).([]ast.Node), false),
+		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement", false).([]ast.Node), false),
 		Line:       startLine,
 		Pos:        startPos,
 	})
