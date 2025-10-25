@@ -2,6 +2,7 @@ package parser
 
 import(
 	// "fmt"
+	// "os"
 
 	"SPL/config"
 	"SPL/models"
@@ -40,8 +41,10 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		tok = p.peek()
 	}
 
+	var tmpIdent models.Token
 	if tok.Type == models.TokenIdent{
 		varData.Name = tok.Value
+		tmpIdent = tok
 
 		p.next()
 		if p.eof(){
@@ -53,62 +56,19 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		return varAst
 	}
 
-	if tok.Type != models.TokenAssign || (tok.Value != "=" && tok.Value != ":="){
-		if tok.Type == models.TokenAssign && (tok.Value == "++" || tok.Value == "--"){
-			p.back()
-			p.back()
-			if !p.sof(){
-				tok = p.peek()
-				if tok.Type == models.TokenType{
-					p.unexpected(fileName) // Error
-					return varAst
-				}
-			}
-			p.next()
-			p.next()
-
-			tok = p.peek()
-
-			method := "+"
-			if tok.Value == "++"{
-				method = "+"
-			}else{
-				method = "-"
-			}
-
-			varDataValue := ast.BinaryOpNode{
-				Left: ast.IdentNode{
-					Name: varData.Name,
-					Line: varData.Line,
-					Pos: varData.Pos,
-				},
-				Right: ast.LiteralNode{
-					Value: "1",
-					Type: "int",
-					Line: varData.Line,
-					Pos: varData.Pos,
-				},
-				Operator: method, Line: varData.Line, Pos: varData.Pos,
-			}
-
-			varAst = append(varAst, ast.AssignNode{
-				Name: varData.Name,
-				Type: varData.Type,
-				Value: varDataValue,
-				Method: method+method,
-				Line: varData.Line,
-				Pos: varData.Pos,
-			})
-
-			p.next()
-
-			return varAst
-		}else if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "+="){
-			// To do
-		}
-
+	if tok.Type != models.TokenAssign{
 		p.In = startIn
 		return varAst
+	}
+
+	if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "-="){
+		varData.Value = append(varData.Value, tmpIdent)
+		method := "+"
+		if tok.Value == "-="{
+			method = "-"
+		}
+
+		varData.Value = append(varData.Value, models.Token{Type: models.TokenOperator, Value: method, Line: tmpIdent.Line, Pos: tmpIdent.Pos})
 	}
 
 	method := tok.Value
@@ -147,7 +107,7 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		}
 		varValue = ast.NullNode{Line: varData.Line, Pos: varData.Pos,}
 	}else{
-		varValue = varValueVerify
+		varValue = varValueVerify[0]
 	}
 
 	varAst = append(varAst, ast.AssignNode{

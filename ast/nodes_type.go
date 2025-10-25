@@ -50,6 +50,13 @@ type BinaryOpNode struct{
 	Pos		int
 }
 
+type UnaryOpNode struct{
+	Right		Node
+	Operator	string
+	Line		int
+	Pos		int
+}
+
 type ControlFlowNode struct{
 	Method		string
 	Argument	Node

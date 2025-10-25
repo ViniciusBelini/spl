@@ -75,22 +75,17 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 			case models.TokenLoopStatement:
 				p.LoopStatementParser(fileName, statementExpr)
+			case models.TokenUnOp:
+				pTemp := p
+				tempAST := p.UnExpr(fileName)
+				if len(tempAST) > 0{
+					p.Ast = append(p.Ast, tempAST[0])
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
 				pTemp := p
-				if tok.Type == models.TokenIdent{
-					tempAST := p.VariableAssignment(fileName)
-					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
-						p.Ast = append(p.Ast, tempAST[0])
-						continue
-					}else if len(tempAST) > 0{
-						p.back()
-						p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
-					}
-					p = pTemp
-				}
-
-
-				pTemp = p
 				tempAST2 := p.ParserLogical(fileName)
 				if len(tempAST2) > 0{
 					p.Ast = append(p.Ast, tempAST2[0])
@@ -105,6 +100,19 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					continue
 				}
 				p = pTemp
+
+				pTemp = p
+				if tok.Type == models.TokenIdent{
+					tempAST := p.VariableAssignment(fileName)
+					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
+						p.Ast = append(p.Ast, tempAST[0])
+						continue
+					}else if len(tempAST) > 0{
+						p.back()
+						p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
+					}
+					p = pTemp
+				}
 
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})

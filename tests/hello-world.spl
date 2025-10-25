@@ -1,1 +1,4 @@
-idade = (20)
+<int> age := 20
+age += 10
+
+<bool> alive := !true
