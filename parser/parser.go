@@ -84,6 +84,15 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 				p.unexpected(fileName)
+			case models.TokenFuncStatement:
+				pTemp := p
+				tempAST := p.FuncStatement(fileName)
+				if len(tempAST) > 0{
+					p.Ast = append(p.Ast, tempAST[0])
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
 				pTemp := p
 				tempAST2 := p.ParserLogical(fileName)

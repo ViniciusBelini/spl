@@ -8,5 +8,6 @@
     "S1007": "[SyntaxError] Unterminated string literal starting",
     "S1008": "[SyntaxError] Expected ')' before end of input",
     "S1009": "[SyntaxError] Variable declaration must have an initial value in strict mode",
-    "S1010": "[SyntaxError] 'continue' or 'break'/'return' cannot be used outside of a loop/function statement"
+    "S1010": "[SyntaxError] 'continue' or 'break'/'return' cannot be used outside of a loop/function statement",
+    "S1011": "[SyntaxError] Function must declare a return type in strict mode"
 }

@@ -29,6 +29,14 @@ type LoopStatement struct{
 	Pos		int
 }
 
+type FuncStatement struct{
+	Name		string
+	Param		Node
+	Consequent	Node
+	Line		int
+	Pos		int
+}
+
 type IdentNode struct{
 	Name		string
 	Line		int

@@ -9,6 +9,7 @@ const(
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"
+	TokenFuncStatement	= "FUNC_STATEMENT"
 	TokenType		= "TYPE"
 	TokenComment		= "COMMENT"
 	TokenCall		= "CALL"

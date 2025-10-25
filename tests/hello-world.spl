@@ -1,4 +1,3 @@
-<int> age := 20
-age += 10
+function plus(x <int>, y <int>) <int>
 
-<bool> alive := !true
+end
