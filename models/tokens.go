@@ -10,6 +10,7 @@ const(
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"
 	TokenFuncStatement	= "FUNC_STATEMENT"
+	TokenNativeSugar	= "NATIVE_SUGAR"
 	TokenType		= "TYPE"
 	TokenComment		= "COMMENT"
 	TokenCall		= "CALL"

@@ -31,14 +31,35 @@ type LoopStatement struct{
 
 type FuncStatement struct{
 	Name		string
-	Param		Node
+	Param		[]ParamNode
 	Consequent	Node
+	Line		int
+	Pos		int
+}
+
+type ParamNode struct{
+	Name		string
+	Type		string
+	Line		int
+	Pos		int
+}
+
+type FuncCall struct{
+	Name		string
+	Param		Node
 	Line		int
 	Pos		int
 }
 
 type IdentNode struct{
 	Name		string
+	Line		int
+	Pos		int
+}
+
+type NativeSugarNode struct{
+	Name		string
+	Value		Node
 	Line		int
 	Pos		int
 }

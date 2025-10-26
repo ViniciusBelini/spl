@@ -1,7 +1,7 @@
 package lexer
 
 import(
-	"fmt"
+	// "fmt"
 	"regexp"
 	"strconv"
 
@@ -21,6 +21,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenFloat, regexp.MustCompile(`[0-9]+\.[0-9]+`)},
 		{models.TokenNumber, regexp.MustCompile(`[0-9]+`)},
 		{models.TokenFuncStatement, regexp.MustCompile(`(\bfunction\b)`)},
+		{models.TokenNativeSugar, regexp.MustCompile(`(\bshow\b)`)},
 		{models.TokenBoolean, regexp.MustCompile(`(\btrue\b|\bfalse\b)`)},
 		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
 		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse\b)`)},
@@ -43,7 +44,6 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 	tokens := []models.Token{}
 	i := 0
 	running := true
-	broken := ""
 	tempLine := 1
 	tempPos := 1
 	for i < len(input){
@@ -51,21 +51,6 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		for _, p := range patterns{
 			if loc := p.Re.FindStringIndex(input[i:]); loc != nil && loc[0] == 0{
 				val := input[i+loc[0] : i+loc[1]]
-
-				if p.Type == models.TokenComment{
-					if running && val == "//" || val == "/*"{
-						running = false
-						broken = "COMMENT"
-					}
-				}
-
-				if !running && p.Type == models.TokenNewLine && broken == "COMMENT"{
-					running = true
-					broken = ""
-				}else if !running && p.Type == models.TokenComment && val == "*/" && broken == "COMMENT"{
-					running = true
-					broken = ""
-				}
 
 				if p.Type == models.TokenNewLine{
 					line++
@@ -82,15 +67,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 				break
 			}
 		}
-		if(!running){
-			if broken == "QUOTE"{
-				errors.ParserError("[SyntaxError] Unterminated string literal starting at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
-			}else if broken == "PARENTHESES"{
-				errors.ParserError("[SyntaxError] Expected ')' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
-			}else{
-				errors.ParserError("[SyntaxError] Unexpected token at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
-			}
-		}else if !match{
+		if !match{
 			errors.ParserError("Undexpected character: " + string(input[i]), true)
 		}
 	}
@@ -107,6 +84,40 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 	var n_tokens []models.Token
 	for i = 0;i < len(tokens);i++{
 		tok := tokens[i]
+
+		if running || running == false && runner["breaker"] == "SINGLE_COMMENT"{
+			if running && tok.Type == models.TokenComment && tok.Value == "//"{
+				running = false
+				runner["breaker"] = "SINGLE_COMMENT"
+				continue
+			}
+
+			if !running{
+				if tok.Type == models.TokenNewLine{
+					running = true
+					runner["breaker"] = "null"
+				}
+
+				continue
+			}
+		}
+
+		if running || running == false && runner["breaker"] == "MULTI_COMMENT"{
+			if running && tok.Type == models.TokenComment && tok.Value == "/*"{
+				running = false
+				runner["breaker"] = "MULTI_COMMENT"
+				continue
+			}
+
+			if !running{
+				if tok.Type == models.TokenComment && tok.Value == "*/"{
+					running = true
+					runner["breaker"] = "null"
+				}
+
+				continue
+			}
+		}
 
 		if running || running == false && runner["breaker"] == "QUOTE"{
 			if running && tok.Type == "QUOTE"{
@@ -128,7 +139,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 					if i-1 >= 0 && tokens[i-1].Type == "BACK_SLASH"{
 						continue
 					}
-					fmt.Println(runner["helper"])
+
 					running = true
 					n_tokens = append(n_tokens, models.Token{models.TokenString, runner["helper"], tempLine, tempPos})
 				}

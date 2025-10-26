@@ -3,6 +3,7 @@ package parser
 import(
 	// "fmt"
 	"strconv"
+	"strings"
 	// "runtime"
 
 	"SPL/config"
@@ -17,6 +18,7 @@ type Parser struct{
 	Ast []ast.Node
 	In int
 	Inside string
+	InsideFuncClass bool
 }
 
 // Main func ASTNIZE
@@ -42,8 +44,16 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				p = pTemp
 				p.unexpected(fileName)
 			case models.TokenObj, models.TokenArrayAccess, models.TokenCall:
-				p.next()
-				continue
+				pTemp := p
+				tempAST := p.FuncCall(fileName)
+				if len(tempAST) > 0 && !statementExpr{
+					p.Ast = append(p.Ast, tempAST[0])
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
+			case models.TokenNativeSugar:
+				p.NativeSugar(fileName)
 			case models.TokenNewLine:
 				p.next()
 				continue
@@ -95,6 +105,19 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				p.unexpected(fileName)
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses:
 				pTemp := p
+				if tok.Type == models.TokenIdent{
+					tempAST := p.VariableAssignment(fileName)
+					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
+						p.Ast = append(p.Ast, tempAST[0])
+						continue
+					}else if len(tempAST) > 0{
+						p.back()
+						p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
+					}
+					p = pTemp
+				}
+
+				pTemp = p
 				tempAST2 := p.ParserLogical(fileName)
 				if len(tempAST2) > 0{
 					p.Ast = append(p.Ast, tempAST2[0])
@@ -109,19 +132,6 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					continue
 				}
 				p = pTemp
-
-				pTemp = p
-				if tok.Type == models.TokenIdent{
-					tempAST := p.VariableAssignment(fileName)
-					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
-						p.Ast = append(p.Ast, tempAST[0])
-						continue
-					}else if len(tempAST) > 0{
-						p.back()
-						p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
-					}
-					p = pTemp
-				}
 
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
@@ -222,6 +232,12 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 				exprStack = []models.Token{}
 				p.next()
 			default:
+				if p.canBack() && tok.Type != models.TokenOperator && tok.Type != models.TokenNewLine{
+					if p.peekBack().Type != models.TokenBinOp && p.peekBack().Type != models.TokenOperator{
+						p.unexpected(fileName)
+					}
+				}
+
 				var currentAstTemp []models.Token
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp = lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
@@ -445,7 +461,32 @@ func (p *Parser) ControlFlow(fileName string) []ast.ControlFlowNode{
 	switch tok.Value{
 		case "continue", "break":
 			method := tok.Value
-			if p.Inside == "LoopStatement"{
+			insideParts := strings.Split(p.Inside, "/")
+			canGoFoward := false
+			for i := 0;i < len(insideParts);i++{
+				if insideParts[i] == "LoopStatement"{
+					canGoFoward = true
+				}
+			}
+			if canGoFoward{
+				p.next()
+				controlAst := ast.NullNode{Line: tempLinePos["line"], Pos: tempLinePos["pos"],}
+
+				flowAst = append(flowAst, ast.ControlFlowNode{Method: method, Argument: controlAst, Line: tempLinePos["line"], Pos: tempLinePos["pos"],})
+				return flowAst
+			}else{
+				p.generic("'"+tok.Value+"' cannot be used outside of a loop statement", "S1010", fileName)
+			}
+		case "return":
+			method := tok.Value
+			insideParts := strings.Split(p.Inside, "/")
+			canGoFoward := false
+			for i := 0;i < len(insideParts);i++{
+				if insideParts[i] == "FuncStatement"{
+					canGoFoward = true
+				}
+			}
+			if canGoFoward{
 				var controlTokens []models.Token
 				p.next()
 				for !p.eof(){
@@ -459,18 +500,18 @@ func (p *Parser) ControlFlow(fileName string) []ast.ControlFlowNode{
 					p.next()
 				}
 
-				controlAstVerify := Astnize(controlTokens, fileName, "LoopStatement", true).([]ast.Node)
+				controlAstVerify := Astnize(controlTokens, fileName, "FuncStatement", true).([]ast.Node)
 				var controlAst ast.Node
 				if len(controlAstVerify) == 0{
 					controlAst = ast.NullNode{Line: tempLinePos["line"], Pos: tempLinePos["pos"],}
 				}else{
-					controlAst = controlAstVerify
+					controlAst = controlAstVerify[0]
 				}
 
 				flowAst = append(flowAst, ast.ControlFlowNode{Method: method, Argument: controlAst, Line: tempLinePos["line"], Pos: tempLinePos["pos"],})
 				return flowAst
 			}else{
-				p.generic("'"+tok.Value+"' cannot be used outside of a loop statement", "S1010", fileName)
+				p.generic("'"+tok.Value+"' cannot be used outside of a function statement", "S1010", fileName)
 			}
 		default:
 			return flowAst

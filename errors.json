@@ -9,5 +9,8 @@
     "S1008": "[SyntaxError] Expected ')' before end of input",
     "S1009": "[SyntaxError] Variable declaration must have an initial value in strict mode",
     "S1010": "[SyntaxError] 'continue' or 'break'/'return' cannot be used outside of a loop/function statement",
-    "S1011": "[SyntaxError] Function must declare a return type in strict mode"
+    "S1011": "[SyntaxError] Function must declare a return type in strict mode",
+    "S1012": "[SyntaxError] Function parameter must have an explicit type in strict mode",
+    "S1013": "[SyntaxError] Invalid parameter '{0}' for function",
+    "S1014": "[SyntaxError] Function declaration missing name and parameter list"
 }

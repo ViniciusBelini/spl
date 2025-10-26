@@ -3,16 +3,19 @@ package errors
 import(
 	"fmt"
 	"os"
+	// "runtime"
 )
 
-// type ParserError struct{
-// 	Line		int
-// 	Pos		int
-// 	Message		string
-// 	Id		string
-// } Soon
-
 func ParserError(msg string, faltalError bool) bool{ // temp
+	// file, lineC, line, ok := runtime.Caller(1)
+	// if ok {
+	// 	fmt.Println(file)
+	// 	fmt.Println(lineC)
+	// 	fmt.Println(line)
+	// } else {
+	// 	fmt.Println("Ooops!")
+	// }
+
 	fmt.Println(msg)
 
 	if faltalError{

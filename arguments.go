@@ -4,6 +4,7 @@ import(
 	"os"
 
 	"SPL/config"
+	"SPL/errors"
 )
 
 func InterpretArgs(fileName string) bool{
@@ -23,7 +24,7 @@ func InterpretArgs(fileName string) bool{
 			case "--mode":
 
 				if i+1 > len(os.Args) || (os.Args[i+1] != "strict" && os.Args[i+1] != "dynamic"){
-					//ValidationError(fileName, "[V1002] InvalidValue: Unsupported value for '--mode'. Expected 'dynamic' or 'strict'.", 2)
+					errors.ParserError("InvalidValue: Unsupported value for '--mode'. Expected 'dynamic' or 'strict'", true)
 					// Give an error
 
 					return false

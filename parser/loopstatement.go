@@ -76,12 +76,14 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 		return nil
 	}
 
+	inside := "LoopStatement/"+p.Inside
+
 	loopAst = append(loopAst, ast.LoopStatement{
 		Method:		"while",
 		Init:		nil,
-		Test:		getFirst(Astnize(loopExpr, fileName, "LoopStatement", true).([]ast.Node), true),
+		Test:		getFirst(Astnize(loopExpr, fileName, inside, true).([]ast.Node), true),
 		Update:		nil,
-		Consequent:	getFirst(Astnize(loopBlock, fileName, "LoopStatement", false).([]ast.Node), false),
+		Consequent:	getFirst(Astnize(loopBlock, fileName, inside, false).([]ast.Node), false),
 		Line:		startLine,
 		Pos:		startPos,
 	})

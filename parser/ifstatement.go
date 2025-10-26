@@ -133,10 +133,12 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 		return nil
 	}
 
+	inside := "IfStatement/"+p.Inside
+
 	ifAst = append(ifAst, ast.IfStatement{
-		Test:       getFirst(Astnize(ifExpr, fileName, "IfStatement", true).([]ast.Node), true),
-		Consequent: getFirst(Astnize(ifBlock, fileName, "IfStatement", false).([]ast.Node), false),
-		Alternate:  getFirst(Astnize(ifAlternate, fileName, "IfStatement", false).([]ast.Node), false),
+		Test:       getFirst(Astnize(ifExpr, fileName, inside, true).([]ast.Node), true),
+		Consequent: getFirst(Astnize(ifBlock, fileName, inside, false).([]ast.Node), false),
+		Alternate:  getFirst(Astnize(ifAlternate, fileName, inside, false).([]ast.Node), false),
 		Line:       startLine,
 		Pos:        startPos,
 	})
