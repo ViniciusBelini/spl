@@ -2,9 +2,9 @@ package models
 
 const(
 	TokenNewLine		= "NEW_LINE"
-	TokenString		= "STRING"
+	TokenString		= "STR"
 	TokenFloat		= "FLOAT"
-	TokenNumber		= "NUMBER"
+	TokenNumber		= "INT"
 	TokenBoolean		= "BOOLEAN"
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"

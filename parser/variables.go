@@ -98,7 +98,7 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		varData.Value = append(varData.Value, tok)
 	}
 
-	varValueVerify := Astnize(varData.Value, fileName, varData.Name, true).([]ast.Node)
+	varValueVerify := Astnize(varData.Value, fileName, varData.Name, true)
 	var varValue ast.Node
 	if len(varValueVerify) == 0{
 		if config.Config["mode"] == "strict"{

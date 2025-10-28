@@ -38,7 +38,7 @@ func (p *Parser) UnExpr(fileName string) []ast.UnaryOpNode{
 
 		var nTok []models.Token
 		nTok = append(nTok, tok)
-		UnExprAST = append(UnExprAST, ast.UnaryOpNode{Right: getFirst(Astnize(nTok, fileName, "IfStatement", true).([]ast.Node), true), Operator: "!", Line: operatorTok.Line, Pos: operatorTok.Pos})
+		UnExprAST = append(UnExprAST, ast.UnaryOpNode{Right: getFirst(Astnize(nTok, fileName, "IfStatement", true), true), Operator: "!", Line: operatorTok.Line, Pos: operatorTok.Pos})
 
 		p.next()
 

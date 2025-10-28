@@ -67,7 +67,7 @@ func (p *Parser) ShowSugar(fileName string) []ast.NativeSugarNode{
 
 	astSugar = append(astSugar, ast.NativeSugarNode{
 		Name: "show",
-		Value: getFirst(Astnize(sugarTokens, fileName, "FuncStatement", true).([]ast.Node), true),
+		Value: getFirst(Astnize(sugarTokens, fileName, "NativeShugar", true), true),
 		Line: tokInit.Line,
 		Pos: tokInit.Pos,
 	})

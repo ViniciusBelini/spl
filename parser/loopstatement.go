@@ -81,9 +81,9 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 	loopAst = append(loopAst, ast.LoopStatement{
 		Method:		"while",
 		Init:		nil,
-		Test:		getFirst(Astnize(loopExpr, fileName, inside, true).([]ast.Node), true),
+		Test:		getFirst(Astnize(loopExpr, fileName, inside, true), true),
 		Update:		nil,
-		Consequent:	getFirst(Astnize(loopBlock, fileName, inside, false).([]ast.Node), false),
+		Consequent:	getFirst(Astnize(loopBlock, fileName, inside, false), false),
 		Line:		startLine,
 		Pos:		startPos,
 	})

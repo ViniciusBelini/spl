@@ -65,7 +65,7 @@ type NativeSugarNode struct{
 }
 
 type LiteralNode struct{
-	Value		string
+	Value		interface{}
 	Type		string
 	Line		int
 	Pos		int

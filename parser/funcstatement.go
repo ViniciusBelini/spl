@@ -118,7 +118,7 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 	FuncAST = append(FuncAST, ast.FuncStatement{
 		Name: funcName,
 		Param: newParams,
-		Consequent: getFirst(Astnize(funcBlock, fileName, "FuncStatement", false).([]ast.Node), false),
+		Consequent: getFirst(Astnize(funcBlock, fileName, "FuncStatement", false), false),
 		Line: funLinePos["line"],
 		Pos: funLinePos["pos"],
 	})
@@ -161,7 +161,7 @@ func (p *Parser) FuncCall(fileName string) []ast.FuncCall{
 		}
 
 		if i+1 == len(funcParams) || paramIn.Type == models.TokenDelimiter && paramIn.Value == ","{
-			varValueVerify := Astnize(paramTokens, fileName, funcName, true).([]ast.Node)
+			varValueVerify := Astnize(paramTokens, fileName, funcName, true)
 			var varValue ast.Node
 			if len(varValueVerify) == 0{
 				varValue = ast.NullNode{Line: tokInit.Line, Pos: tokInit.Pos,}
