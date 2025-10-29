@@ -1,10 +1,10 @@
 package parser
 
 import(
-	// "fmt"
+	"fmt"
 	"strconv"
 	"strings"
-	// "runtime"
+	"runtime"
 
 	"SPL/config"
 	"SPL/lexer"
@@ -169,14 +169,14 @@ func (p *Parser) canBack() bool{if p.In-1 >= 0{return true};return false}
 // ---
 // errors
 func (p *Parser) unexpected(fileName string){
-	// file, lineC, line, ok := runtime.Caller(1)
-	// if ok {
-	// 	fmt.Println(file)
-	// 	fmt.Println(lineC)
-	// 	fmt.Println(line)
-	// } else {
-	// 	fmt.Println("Ooops!")
-	// }
+	file, lineC, line, ok := runtime.Caller(1)
+	if ok {
+		fmt.Println(file)
+		fmt.Println(lineC)
+		fmt.Println(line)
+	} else {
+		fmt.Println("Ooops!")
+	}
 
 	ParserErrorMsg := "[SyntaxError] Unexpected token at "+fileName+" [S1001]" // Error
 

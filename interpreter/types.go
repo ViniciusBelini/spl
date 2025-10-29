@@ -3,6 +3,7 @@ package interpreter
 type Env struct{
 	Return interface{}
 	Variables map[string]*Vars
+	GlobalVars map[string]*Vars
 	Functions map[string]*Func
 	Outer *Env
 }

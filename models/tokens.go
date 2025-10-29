@@ -2,10 +2,10 @@ package models
 
 const(
 	TokenNewLine		= "NEW_LINE"
-	TokenString		= "STR"
-	TokenFloat		= "FLOAT"
-	TokenNumber		= "INT"
-	TokenBoolean		= "BOOLEAN"
+	TokenString		= "<str>"
+	TokenFloat		= "<float>"
+	TokenNumber		= "<int>"
+	TokenBoolean		= "<bool>"
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"

@@ -12,8 +12,11 @@ import(
 )
 
 // Main interpreter routine
-func Run(aAst []ast.Node, outer *Env, fileName string) (interface{}, error){
-	env := NewEnv(outer)
+func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{}, error){
+	env := outer
+	if newEnvS{
+		env = NewEnv(outer)
+	}
 
 	// First scan
 	for i := 0;i < len(aAst);i++{
@@ -34,8 +37,29 @@ func Run(aAst []ast.Node, outer *Env, fileName string) (interface{}, error){
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
+			case ast.NativeSugarNode:
+				if node.(ast.NativeSugarNode).Name == "show"{
+					value, err := Run([]ast.Node{node.(ast.NativeSugarNode).Value}, env, fileName, false)
+					if err != nil{
+						return nil, err
+					}
+					fmt.Println(value)
+					env.Return = true
+				}
+			case ast.IdentNode:
+				varData, err := GetVariable(node.(ast.IdentNode).Name, env, fileName, node.(ast.IdentNode).Line, node.(ast.IdentNode).Pos)
+				if err != nil{
+					return nil, err
+				}
+
+				env.Return = varData.Value
+			case ast.AssignNode:
+				value, err := AssignVariable(node.(ast.AssignNode), env, fileName)
+				if err != nil{
+					return value, err
+				}
 			case ast.UnaryOpNode:
-				value, err := Run([]ast.Node{node.(ast.UnaryOpNode).Right}, env, fileName)
+				value, err := Run([]ast.Node{node.(ast.UnaryOpNode).Right}, env, fileName, false)
 				typeValue, _ := GetTypeData(value)
 				if err != nil{
 					return value, err
@@ -53,12 +77,12 @@ func Run(aAst []ast.Node, outer *Env, fileName string) (interface{}, error){
 					}
 				}
 			case ast.BinaryOpNode:
-				left, err := Run([]ast.Node{node.(ast.BinaryOpNode).Left}, env, fileName)
+				left, err := Run([]ast.Node{node.(ast.BinaryOpNode).Left}, env, fileName, false)
 				if err != nil{
 					return left, err
 				}
 
-				right, err := Run([]ast.Node{node.(ast.BinaryOpNode).Right}, env, fileName)
+				right, err := Run([]ast.Node{node.(ast.BinaryOpNode).Right}, env, fileName, false)
 				if err != nil{
 					return right, err
 				}
@@ -120,7 +144,6 @@ func Run(aAst []ast.Node, outer *Env, fileName string) (interface{}, error){
 				// Just skip
 				continue
 			default:
-				fmt.Println(node)
 				fmt.Println("Here we are:", reflect.TypeOf(node)) // Remove this XXXXXXXXXXXXX
 		}
 	}
@@ -132,6 +155,7 @@ func NewEnv(outer *Env) *Env{
 	return &Env{
 		Return: nil,
 		Variables: make(map[string]*Vars),
+		GlobalVars: make(map[string]*Vars),
 		Functions: make(map[string]*Func),
 		Outer:     outer,
 	}

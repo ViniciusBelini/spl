@@ -97,8 +97,6 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 					running = true
 					runner["breaker"] = "null"
 				}
-
-				continue
 			}
 		}
 
