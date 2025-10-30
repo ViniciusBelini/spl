@@ -37,6 +37,12 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
+			case ast.IfStatement:
+				stm, err := IfStatement(node.(ast.IfStatement), env, fileName)
+				if err != nil{
+					return nil, err
+				}
+				env.Return = stm
 			case ast.NullNode:
 				env.Return = nil
 			case ast.NativeSugarNode:
@@ -106,8 +112,21 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				}
 
 				switch node.(ast.BinaryOpNode).Operator{
+					case "..":
+						if 1 == 1 || TypeDataString(left, right) || config.Config["mode"] == "dynamic"{
+							env.Return = MathJoin(left, right)
+						}else{
+							_, typeLeft := GetTypeData(left)
+							_, typeRight := GetTypeData(right)
+
+							return nil, errors.New(TRunMakeError(7, typeLeft, typeRight, node.(ast.BinaryOpNode).Operator, fileName, node.(ast.BinaryOpNode).Line, node.(ast.BinaryOpNode).Pos))
+						}
 					case "+", "-", "/", "*", "%":
 						if VerifyTypeData(left, right) || (TypeDataNumber(left, right) && config.Config["mode"] == "dynamic"){
+							if TypeDataString(left, right) && config.Config["mode"] == "strict"{
+								return nil, errors.New(TRunMakeError(6, "null", "null", "null", fileName, node.(ast.BinaryOpNode).Line, node.(ast.BinaryOpNode).Pos))
+							}
+
 							ReturnMath, err := MathOp(left, right, node.(ast.BinaryOpNode).Operator)
 							if err != nil{
 								return ReturnMath, errors.New(TGRunMakeError(1, err.Error(), fileName, node.(ast.BinaryOpNode).Line, node.(ast.BinaryOpNode).Pos))
@@ -190,6 +209,12 @@ func TypeDataNumber(x interface{}, y interface{}) bool{
 	b, _ := GetTypeData(y)
 
 	return (a == 1 || a == 2) && (b == 1 || b == 2)
+}
+func TypeDataString(x interface{}, y interface{}) bool{
+	a, _ := GetTypeData(x)
+	b, _ := GetTypeData(y)
+
+	return a == 0 && b == 0
 }
 func GetTypeData(x interface{})(int, string){
 	switch x.(type){

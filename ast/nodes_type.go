@@ -32,6 +32,7 @@ type LoopStatement struct{
 type FuncStatement struct{
 	Name		string
 	Param		[]ParamNode
+	Type		string
 	Consequent	Node
 	Line		int
 	Pos		int

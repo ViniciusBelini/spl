@@ -24,7 +24,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenNativeSugar, regexp.MustCompile(`(\bshow\b)`)},
 		{models.TokenBoolean, regexp.MustCompile(`(\btrue\b|\bfalse\b)`)},
 		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
-		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse\b)`)},
+		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse if\b|\belse\b)`)},
 		{models.TokenLoopStatement, regexp.MustCompile(`(\bwhile\b)`)},
 		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>`)},
 		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
@@ -33,12 +33,12 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenNull, regexp.MustCompile(`\bnull\b`)},
 		{models.TokenAssign, regexp.MustCompile(`(=|:=|-=|\+=)`)},
 		{models.TokenUnOp, regexp.MustCompile(`(!|\+\+|--)`)},
-		{models.TokenOperator, regexp.MustCompile(`[+\-*/%]`)},
+		{models.TokenOperator, regexp.MustCompile(`(\+|\-|\*|\/|%|\.\.)`)},
 		{models.TokenDelimiter, regexp.MustCompile(`(;|\bend\b|:|,)`)},
 		{models.TokenObj, regexp.MustCompile(`\b[a-zA-Z_]\w*(?:\.\w+|(\[|\()\w*(\]|\)))+`)},
 		{models.TokenIdent, regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`)},
 		{models.TokenSpace, regexp.MustCompile(`\s+`)},
-		{models.TokenUnknown, regexp.MustCompile(`(.*)`)},
+		{models.TokenUnknown, regexp.MustCompile(`^.`)},
 	}
 
 	tokens := []models.Token{}

@@ -1,0 +1,44 @@
+// Escopo global (modo strict)
+<str> resultado := "Início do teste de escopo"
+
+if true
+    <str> nome := "Vinícius"
+    <int> idade := 25
+    <str> status := "ativo"
+
+    show "Bloco 1 - nome: " .. nome
+    show "Bloco 1 - idade: " .. idade
+    show "Bloco 1 - status: " .. status
+
+    // Bloco interno - deve criar um novo escopo
+    if true
+        <str> nome := "Maria"  // sombra do nome externo
+        <int> idade := 30      // sombra da idade externa
+        show "Bloco 1.1 - nome: " .. nome
+        show "Bloco 1.1 - idade: " .. idade
+
+        if true
+            <str> nome := "João"  // nova sombra ainda mais profunda
+            show "Bloco 1.1.1 - nome: " .. nome
+        end
+
+        // Aqui o nome deve voltar a ser "Maria"
+        show "Bloco 1.1 (após interno) - nome: " .. nome
+    end
+
+    // Aqui o nome deve voltar a ser "Vinícius"
+    show "Bloco 1 (após internos) - nome: " .. nome
+
+    // Reatribuição local
+    nome = "Carlos"
+    show "Bloco 1 - nome reatribuído: " .. nome
+end
+
+// Fora do bloco: nenhuma variável local de dentro deve existir!
+show "Tentando acessar variáveis fora do escopo..."
+show resultado
+
+// As linhas abaixo devem gerar erros de variável indefinida no modo strict:
+show nome
+show idade
+show status

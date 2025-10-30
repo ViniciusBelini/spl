@@ -70,7 +70,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				p = pTemp
 				p.unexpected(fileName)
 			case models.TokenIfStatement:
-				if tok.Value == "if"{
+				if tok.Value == "if" || tok.Value == "else if"{
 					pTemp := p
 					tempAST := p.IfStatement(fileName)
 					if len(tempAST) > 0 && !statementExpr{
@@ -429,10 +429,12 @@ func precedence(op string) int {
 		return 3
 	case "<", ">", "<=", ">=":
 		return 4
-	case "+", "-":
+	case "..":
 		return 5
-	case "*", "/", "%":
+	case "+", "-":
 		return 6
+	case "*", "/", "%":
+		return 7
 	// case "!", "++", "--", "-u":
 	// 	return 7
 	default:

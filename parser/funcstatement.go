@@ -84,9 +84,9 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 
 	p.next();tok = p.peek()
 
-	// funcType := "dynamic"
+	funcType := "dynamic"
 	if tok.Type == models.TokenType{
-		// funcType = tok.Value
+		funcType = tok.Value
 
 		if !p.canNext(){
 			p.expected("function body", fileName)
@@ -118,6 +118,7 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 	FuncAST = append(FuncAST, ast.FuncStatement{
 		Name: funcName,
 		Param: newParams,
+		Type: funcType,
 		Consequent: getFirst(Astnize(funcBlock, fileName, "FuncStatement", false), false),
 		Line: funLinePos["line"],
 		Pos: funLinePos["pos"],

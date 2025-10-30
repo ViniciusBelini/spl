@@ -27,7 +27,7 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 	exprType := tok.Value
 	var ifExpr []models.Token
 	p.next()
-	if exprType == "if"{
+	if exprType == "if" || exprType == "else if"{
 		for !p.eof(){
 			tok = p.peek()
 
@@ -73,7 +73,7 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 			}
 
 			if !full{
-				if blockWithEnds-1 <= 0 && tok.Type == models.TokenIfStatement && tok.Value == "else"{
+				if blockWithEnds-1 <= 0 && tok.Type == models.TokenIfStatement && (tok.Value == "else" || tok.Value == "else if"){
 					blockWithEnds = 0
 					break
 				}
@@ -102,25 +102,32 @@ func (p *Parser) IfStatement(fileName string) []ast.IfStatement{
 	ifBlock := loopGetBlock(false)
 
 	var ifAlternate []models.Token
-	if tok.Type == models.TokenIfStatement && tok.Value == "else"{
-		if p.canNext() && p.peekNext().Value == "if"{
-			p.next()
-			ifAlternate = loopGetBlock(true)
-		}else if p.canNext(){
-			p.next()
-			ifAlternate = loopGetBlock(false)
+	elseOnly := true
+	if tok.Type == models.TokenIfStatement{
+		if tok.Value == "else" || tok.Value == "else if"{
+			if tok.Value == "else"{
+				p.next()
+				elseOnly = true
+			}else{
+				elseOnly = false
+			}
+			ifAlternate = p.GetBlock(fileName, "if")
 		}else{
 			p.unexpected(fileName)
 		}
 	}
 
-	// tok = p.peek()
+	tok = p.peek()
 
 	if tok.Type != models.TokenDelimiter && tok.Value != "end"{
 		if p.eof(){
 			p.back()
 		}
 		p.generic("[SyntaxError] Missing 'end' of 'if' statement", "S1005", fileName) // Error
+	}
+
+	if !elseOnly{
+		ifAlternate = append(ifAlternate, tok)
 	}
 
 	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
