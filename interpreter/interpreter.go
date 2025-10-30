@@ -37,6 +37,8 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
+			case ast.NullNode:
+				env.Return = nil
 			case ast.NativeSugarNode:
 				if node.(ast.NativeSugarNode).Name == "show"{
 					value, err := Run([]ast.Node{node.(ast.NativeSugarNode).Value}, env, fileName, false)
@@ -60,7 +62,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				}
 			case ast.UnaryOpNode:
 				value, err := Run([]ast.Node{node.(ast.UnaryOpNode).Right}, env, fileName, false)
-				typeValue, _ := GetTypeData(value)
+				typeValue, typeName := GetTypeData(value)
 				if err != nil{
 					return value, err
 				}
@@ -74,6 +76,22 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 						env.Return = RetunUnary
 					}else{
 						return nil, errors.New(TRunMakeError(2, "null", "null", "null", fileName, node.(ast.UnaryOpNode).Line, node.(ast.UnaryOpNode).Pos))
+					}
+				}else if node.(ast.UnaryOpNode).Operator == "+" || node.(ast.UnaryOpNode).Operator == "-"{
+					varName := node.(ast.UnaryOpNode).Right.(ast.IdentNode).Name
+
+					if typeValue == 1 || typeValue == 2{
+						varNValue, ers := MathOp(value, 1, node.(ast.UnaryOpNode).Operator)
+						if ers != nil{
+							return nil, ers
+						}
+
+						_, err := SetVariable(varName, varNValue, env, fileName, node.(ast.UnaryOpNode).Line, node.(ast.UnaryOpNode).Pos)
+						if err != nil{
+							return nil, err
+						}
+					}else{
+						return nil, errors.New(TRunMakeError(5, varName, "null", typeName, fileName, node.(ast.UnaryOpNode).Line, node.(ast.UnaryOpNode).Pos))
 					}
 				}
 			case ast.BinaryOpNode:

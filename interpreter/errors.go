@@ -16,6 +16,8 @@ func TRunMakeError(id int, x string, y string, z string, fileName string, line i
 			errorStr += "Cannot assign a '"+y+"' to '"+x+"' (type "+z+") at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 		case 4:
 			errorStr += "Variable '"+x+"' declaration must include an explicit type in strict mode  at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]\nDid you mean: `<int> x := 5`?"
+		case 5:
+			errorStr += "Cannot increase to '"+x+"' (type "+z+") at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 	}
 
 	return errorStr

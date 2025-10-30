@@ -1,10 +1,10 @@
 package parser
 
 import(
-	"fmt"
+	// "fmt"
 	"strconv"
 	"strings"
-	"runtime"
+	// "runtime"
 
 	"SPL/config"
 	"SPL/lexer"
@@ -123,7 +123,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 
-				if tok.Type == models.TokenUnOp{
+				if tok.Type == models.TokenUnOp || (p.canNext() && p.peekNext().Type == models.TokenUnOp){
 					pTemp = p
 					tempAST3 := p.UnExpr(fileName)
 					if len(tempAST3) > 0{
@@ -169,14 +169,14 @@ func (p *Parser) canBack() bool{if p.In-1 >= 0{return true};return false}
 // ---
 // errors
 func (p *Parser) unexpected(fileName string){
-	file, lineC, line, ok := runtime.Caller(1)
-	if ok {
-		fmt.Println(file)
-		fmt.Println(lineC)
-		fmt.Println(line)
-	} else {
-		fmt.Println("Ooops!")
-	}
+	// file, lineC, line, ok := runtime.Caller(1)
+	// if ok {
+	// 	fmt.Println(file)
+	// 	fmt.Println(lineC)
+	// 	fmt.Println(line)
+	// } else {
+	// 	fmt.Println("Ooops!")
+	// }
 
 	ParserErrorMsg := "[SyntaxError] Unexpected token at "+fileName+" [S1001]" // Error
 
@@ -233,14 +233,16 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 				exprStack = []models.Token{}
 				p.next()
 			default:
-				if p.canBack() && tok.Type != models.TokenOperator && tok.Type != models.TokenNewLine{
-					if p.peekBack().Type != models.TokenBinOp && p.peekBack().Type != models.TokenOperator{
-						p.unexpected(fileName)
+				if len(stack) > 1{
+					if p.canBack() && p.peekBack().Type != models.TokenNewLine && tok.Type != models.TokenOperator && tok.Type != models.TokenNewLine{
+						if p.peekBack().Type != models.TokenBinOp && p.peekBack().Type != models.TokenOperator{
+							p.unexpected(fileName)
+						}
 					}
 				}
 
 				var currentAstTemp []models.Token
-				if tok.Type == models.TokenUnOp{
+				if tok.Type == models.TokenUnOp || (p.canNext() && p.peekNext().Type == models.TokenUnOp){
 					if p.canNext(){
 						currentAstTemp = append(currentAstTemp, tok)
 						p.next()

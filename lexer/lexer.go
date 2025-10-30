@@ -54,6 +54,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 
 				if p.Type == models.TokenNewLine{
 					line++
+					pos = 0
 				}
 
 				if running{

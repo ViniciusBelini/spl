@@ -73,13 +73,13 @@ func readFileTokenize(fileName string) []models.Token{
 // run the program
 func run(allTokens []models.Token, fileName string) bool{
 	ast := parser.Astnize(allTokens, fileName, "null", false)
-	msg, err := interpreter.Run(ast, nil, fileName, true)
+	_, err := interpreter.Run(ast, nil, fileName, true)
 
 	if err != nil{
 		fmt.Println(err)
 	}
 
-	fmt.Println(msg)
+	// fmt.Println(msg)
 
 	//jsonData, _ := json.MarshalIndent(ast, "", "   ")
 	// fmt.Printf("%#v\n", ast)

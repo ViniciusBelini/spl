@@ -20,12 +20,14 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 			return nil, errors.New(TRunMakeError(4, node.Name, "null", "null", fileName, node.Line, node.Pos))
 		}
 
+
 		newVar, err := DefineVariable(node.Name, value, node.Type, outer, fileName, node.Line, node.Pos)
-		if err != nil{
+		_, err2 := GetVariable(node.Name, outer, fileName, node.Line, node.Pos)
+		if err != nil || err2 == nil{
 			if config.Config["mode"] == "dynamic"{
-				_, err := SetVariable(node.Name, value, outer, fileName, node.Line, node.Pos)
-				if err != nil{
-					return nil, err
+				_, errs := SetVariable(node.Name, value, outer, fileName, node.Line, node.Pos)
+				if errs != nil{
+					return nil, errs
 				}
 				return value, nil
 			}
@@ -66,7 +68,7 @@ func DefineVariable(name string, value interface{}, vType string, outer *Env, fi
 	}
 
 	_, nType := GetTypeData(value)
-	if vType != nType{
+	if vType != nType && vType != "dynamic"{
 		return nil, errors.New(TRunMakeError(3, name, nType, vType, fileName, line, pos))
 	}
 
