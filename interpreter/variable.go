@@ -20,10 +20,14 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 			return nil, errors.New(TRunMakeError(4, node.Name, "null", "null", fileName, node.Line, node.Pos))
 		}
 
-
 		newVar, err := DefineVariable(node.Name, value, node.Type, outer, fileName, node.Line, node.Pos)
 		_, err2 := GetVariable(node.Name, outer, fileName, node.Line, node.Pos)
-		if err != nil || err2 == nil{
+
+		if err != nil && err2 != nil{
+			return nil, err
+		}
+
+		if err != nil && err2 == nil{
 			if config.Config["mode"] == "dynamic"{
 				_, errs := SetVariable(node.Name, value, outer, fileName, node.Line, node.Pos)
 				if errs != nil{
@@ -31,8 +35,8 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 				}
 				return value, nil
 			}
-			return nil, err
 		}
+
 		return newVar, err
 	}else if node.Method == "=" || node.Method == "+=" || node.Method == "-="{
 		value, err := Run([]ast.Node{node.Value}, outer, fileName, false)
@@ -57,6 +61,13 @@ func GetVariable(name string, outer *Env, fileName string, line int, pos int) (*
 		if varVal, exists := outer.GlobalVars[name];exists{
 			return varVal, nil
 		}
+
+		if outer.Outer != nil{
+			varVal, err := GetVariable(name, outer.Outer, fileName, line, pos)
+			if err == nil{
+				return varVal, nil
+			}
+		}
 		return nil, errors.New(NRunMakeError(1, name, fileName, line, pos))
 	}
 }
@@ -67,6 +78,19 @@ func DefineVariable(name string, value interface{}, vType string, outer *Env, fi
 		return nil, errors.New(NRunMakeError(2, name, fileName, line, pos))
 	}
 
+	_, nType := GetTypeData(value)
+	if vType != nType && vType != "dynamic"{
+		return nil, errors.New(TRunMakeError(3, name, nType, vType, fileName, line, pos))
+	}
+
+	outer.Variables[name] = &Vars{
+		Value: value,
+		Type: vType,
+	}
+
+	return outer.Variables[name], nil
+}
+func ForceDefineVariable(name string, value interface{}, vType string, outer *Env, fileName string, line int, pos int) (*Vars, error){
 	_, nType := GetTypeData(value)
 	if vType != nType && vType != "dynamic"{
 		return nil, errors.New(TRunMakeError(3, name, nType, vType, fileName, line, pos))

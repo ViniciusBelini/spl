@@ -14,7 +14,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		Type string
 		Re *regexp.Regexp
 	}{
-		{models.TokenComment, regexp.MustCompile(`(\/\/|\/\*|\*\/)`)},
+		{models.TokenComment, regexp.MustCompile(`(\/\/|\/\*|\*\/|#)`)},
 		{models.TokenNewLine, regexp.MustCompile(`\r?\n`)},
 		{"QUOTE", regexp.MustCompile(`("|')`)},
 		{"BACK_SLASH", regexp.MustCompile(`\\`)},
@@ -87,7 +87,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		tok := tokens[i]
 
 		if running || running == false && runner["breaker"] == "SINGLE_COMMENT"{
-			if running && tok.Type == models.TokenComment && tok.Value == "//"{
+			if running && tok.Type == models.TokenComment && (tok.Value == "//" || tok.Value == "#"){
 				running = false
 				runner["breaker"] = "SINGLE_COMMENT"
 				continue

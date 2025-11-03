@@ -33,7 +33,7 @@ type FuncStatement struct{
 	Name		string
 	Param		[]ParamNode
 	Type		string
-	Consequent	Node
+	Consequent	[]Node
 	Line		int
 	Pos		int
 }
@@ -47,7 +47,7 @@ type ParamNode struct{
 
 type FuncCall struct{
 	Name		string
-	Param		Node
+	Param		[]Node
 	Line		int
 	Pos		int
 }

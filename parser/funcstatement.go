@@ -63,7 +63,7 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 			if i+1 < len(funcParams) && funcParams[i+1].Type == models.TokenType{
 				typeParam = funcParams[i+1].Value
 				i += 2
-			}else{
+			}else if config.Config["mode"] == "strict"{
 				p.generic("Function parameter must have an explicit type in strict mode", "S1012", fileName) // Error
 				return FuncAST
 			}
@@ -105,21 +105,21 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 
 	funcBlock := p.GetBlock(fileName, "function")
 
-	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
-		if len(nodes) > 0{
-			if returnFr{
-				return nodes[0]
-			}
-			return nodes
-		}
-		return nil
-	}
+	// getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
+	// 	if len(nodes) > 0{
+	// 		if returnFr{
+	// 			return nodes[0]
+	// 		}
+	// 		return nodes
+	// 	}
+	// 	return nil
+	// }
 
 	FuncAST = append(FuncAST, ast.FuncStatement{
 		Name: funcName,
 		Param: newParams,
 		Type: funcType,
-		Consequent: getFirst(Astnize(funcBlock, fileName, "FuncStatement", false), false),
+		Consequent: Astnize(funcBlock, fileName, "FuncStatement", false),
 		Line: funLinePos["line"],
 		Pos: funLinePos["pos"],
 	})
@@ -172,6 +172,9 @@ func (p *Parser) FuncCall(fileName string) []ast.FuncCall{
 			newParams = append(newParams, varValue)
 			paramTokens = paramTokens[:0]
 
+			if paramIn.Type == models.TokenDelimiter && paramIn.Value == ","{
+				continue
+			}
 			break
 		}
 	}

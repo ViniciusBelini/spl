@@ -21,7 +21,7 @@ func MathOp(x, y interface{}, op string) (interface{}, error){
 							if y == 0 {
 								return nil, fmt.Errorf("Division by zero")
 							}
-							return x / y, nil
+							return float64(x) / float64(y), nil
 						case "%":
 							if y == 0 {
 								return nil, fmt.Errorf("Division by zero")

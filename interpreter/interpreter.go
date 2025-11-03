@@ -5,6 +5,7 @@ import(
 	"reflect"
 	"strconv"
 	"errors"
+	// "strings"
 
 	"SPL/config"
 	"SPL/models"
@@ -23,12 +24,10 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 		node := aAst[i]
 		switch node.(type){
 			case ast.FuncStatement:
-				// fmt.Printf("%#v\n", node)
-				// fmt.Println(node.(ast.FuncStatement).Name)
-
-				env.Functions[node.(ast.FuncStatement).Name] = &Func{
-					Outer: env,
-					Point: i,
+				funcStat := node.(ast.FuncStatement)
+				err := AssignFunc(funcStat.Name, &funcStat, env, fileName, funcStat.Line, funcStat.Pos)
+				if err != nil{
+					return nil, err
 				}
 		}
 	}
@@ -37,12 +36,51 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
-			case ast.IfStatement:
-				stm, err := IfStatement(node.(ast.IfStatement), env, fileName)
+			case ast.FuncCall:
+				if BuiltInFuncsExists(node.(ast.FuncCall).Name){
+					result, err := BuiltInFuncsCall(node.(ast.FuncCall), env, fileName)
+					if err != nil{
+						return nil, err
+					}
+					env.Return = result
+				}else{
+					result, err := CallFunc(node.(ast.FuncCall).Name, node.(ast.FuncCall).Param, env, fileName, node.(ast.FuncCall).Line, node.(ast.FuncCall).Pos)
+					if err != nil{
+						return nil, err
+					}
+					env.Return = result
+				}
+			case ast.ControlFlowNode:
+				method := node.(ast.ControlFlowNode).Method
+				argument, err := Run([]ast.Node{node.(ast.ControlFlowNode).Argument}, env, fileName, false)
 				if err != nil{
 					return nil, err
 				}
-				env.Return = stm
+
+				return [2]any{method, argument}, nil
+			case ast.IfStatement, ast.LoopStatement:
+				switch node.(type){
+					case ast.IfStatement:
+						stm, err := IfStatement(node.(ast.IfStatement), env, fileName)
+						if err != nil{
+							return nil, err
+						}
+						env.Return = stm
+
+						if _, ok := stm.([2]any);ok{
+							return stm, nil
+						}
+					case ast.LoopStatement:
+						stm, err := LoopStatement(node.(ast.LoopStatement), env, fileName)
+						if err != nil{
+							return nil, err
+						}
+						env.Return = stm
+
+						if _, ok := stm.([2]any);ok{
+							return stm, nil
+						}
+				}
 			case ast.NullNode:
 				env.Return = nil
 			case ast.NativeSugarNode:
@@ -51,7 +89,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					if err != nil{
 						return nil, err
 					}
-					fmt.Println(value)
+					fmt.Printf("%v", value)
 					env.Return = true
 				}
 			case ast.IdentNode:
@@ -66,6 +104,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				if err != nil{
 					return value, err
 				}
+				env.Return = value
 			case ast.UnaryOpNode:
 				value, err := Run([]ast.Node{node.(ast.UnaryOpNode).Right}, env, fileName, false)
 				typeValue, typeName := GetTypeData(value)
@@ -161,7 +200,13 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				tmpType := node.(ast.LiteralNode).Type
 
 				if tmpType == models.TokenString{
-					env.Return = tmpValue.(string)[1 : len(tmpValue.(string))-1]
+					// env.Return = strings.ReplaceAll(tmpValue.(string)[1 : len(tmpValue.(string))-1], "\b\\n", "\n")
+					realText, err := strconv.Unquote(tmpValue.(string))
+					if err != nil{
+						return nil, err
+					}
+
+					env.Return = realText
 				}else if tmpType == models.TokenNumber{
 					if v, err := strconv.Atoi(tmpValue.(string));err == nil{
 						env.Return = v
@@ -194,6 +239,7 @@ func NewEnv(outer *Env) *Env{
 		Variables: make(map[string]*Vars),
 		GlobalVars: make(map[string]*Vars),
 		Functions: make(map[string]*Func),
+		GlobalAccess: false,
 		Outer:     outer,
 	}
 }

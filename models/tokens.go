@@ -6,6 +6,7 @@ const(
 	TokenFloat		= "<float>"
 	TokenNumber		= "<int>"
 	TokenBoolean		= "<bool>"
+	TokenDynamic		= "dynamic"
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"
