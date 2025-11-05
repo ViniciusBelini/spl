@@ -6,6 +6,7 @@ import(
 
 type Env struct{
 	Return interface{}
+	RealReturn interface{}
 	Variables map[string]*Vars
 	GlobalVars map[string]*Vars
 	Functions map[string]*Func

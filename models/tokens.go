@@ -1,12 +1,15 @@
 package models
 
 const(
+	TokenList		= "LIST"
+	TokenImport		= "IMPORT"
 	TokenNewLine		= "NEW_LINE"
 	TokenString		= "<str>"
 	TokenFloat		= "<float>"
 	TokenNumber		= "<int>"
 	TokenBoolean		= "<bool>"
 	TokenDynamic		= "dynamic"
+	TokenModule		= "module"
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"

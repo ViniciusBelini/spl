@@ -184,3 +184,66 @@ func (p *Parser) FuncCall(fileName string) []ast.FuncCall{
 	p.next()
 	return callAst
 }
+
+func (p *Parser) ObjCall(fileName string) []ast.ObjCall{
+	var callAst []ast.ObjCall
+
+	if p.eof() || p.peek().Type != models.TokenObj{
+		return callAst
+	}
+
+	tok := p.peek()
+
+	obj1, obj2 := splitFirstObject(tok.Value)
+
+	obj1Token := lexer.Tokenize(obj1, fileName, tok.Line, tok.Pos)
+	obj1Ast := Astnize(obj1Token, fileName, "object", true)
+
+	obj2Token := lexer.Tokenize(obj2, fileName, tok.Line, tok.Pos)
+	obj2Ast := Astnize(obj2Token, fileName, "object", true)
+
+	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
+		if len(nodes) > 0{
+			if returnFr{
+				return nodes[0]
+			}
+			return nodes
+		}
+		return nil
+	}
+
+	callAst = append(callAst, ast.ObjCall{
+		Obj: getFirst(obj1Ast, true),
+		Consequent: getFirst(obj2Ast, true),
+		Line: tok.Line,
+		Pos: tok.Pos,
+	})
+
+	p.next()
+
+	return callAst
+}
+func splitFirstObject(expr string) (string, string){ // helper
+	bracketStack := []rune{}
+
+	for i, r := range expr{
+		switch r{
+			case '(', '[':
+				bracketStack = append(bracketStack, r)
+			case ')':
+				if len(bracketStack) > 0 && bracketStack[len(bracketStack)-1] == '('{
+					bracketStack = bracketStack[:len(bracketStack)-1]
+				}
+			case ']':
+				if len(bracketStack) > 0 && bracketStack[len(bracketStack)-1] == '['{
+					bracketStack = bracketStack[:len(bracketStack)-1]
+				}
+			case '.':
+				if len(bracketStack) == 0{
+					return expr[:i], expr[i+1:]
+				}
+		}
+	}
+
+	return expr, ""
+}

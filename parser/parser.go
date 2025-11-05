@@ -1,10 +1,10 @@
 package parser
 
 import(
-	// "fmt"
+	"fmt"
 	"strconv"
 	"strings"
-	// "runtime"
+	"runtime"
 
 	"SPL/config"
 	"SPL/lexer"
@@ -33,6 +33,15 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 		tok := p.peek()
 
 		switch tok.Type{
+			case models.TokenImport:
+				pTemp := p
+				tempAST := p.ImportSys(fileName)
+				if len(tempAST) > 0 && !statementExpr{
+					p.Ast = append(p.Ast, tempAST[0])
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
 			case models.TokenControlFlow:
 				pTemp := p
 				tempAST := p.ControlFlow(fileName)
@@ -42,9 +51,9 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 				p.unexpected(fileName)
-			case models.TokenObj, models.TokenArrayAccess:
+			case models.TokenArrayAccess:
 				pTemp := p
-				tempAST := p.FuncCall(fileName)
+				tempAST := p.ObjCall(fileName)
 				if len(tempAST) > 0{
 					p.Ast = append(p.Ast, tempAST[0])
 					continue
@@ -93,7 +102,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 				p.unexpected(fileName)
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenUnOp, models.TokenCall:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenUnOp, models.TokenCall, models.TokenObj:
 				pTemp := p
 				if tok.Type == models.TokenIdent{
 					tempAST := p.VariableAssignment(fileName)
@@ -145,6 +154,17 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					p.unexpected(fileName)
 				}
 
+				if tok.Type == models.TokenObj{
+					pTemp := p
+					tempAST := p.ObjCall(fileName)
+					if len(tempAST) > 0{
+						p.Ast = append(p.Ast, tempAST[0])
+						continue
+					}
+					p = pTemp
+					p.unexpected(fileName)
+				}
+
 				if tok.Type == models.TokenIdent{
 					p.Ast = append(p.Ast, ast.IdentNode{Name: tok.Value, Line: tok.Line, Pos: tok.Pos})
 				}else if tok.Type == models.TokenParentheses{
@@ -180,14 +200,14 @@ func (p *Parser) canBack() bool{if p.In-1 >= 0{return true};return false}
 // ---
 // errors
 func (p *Parser) unexpected(fileName string){
-	// file, lineC, line, ok := runtime.Caller(1)
-	// if ok {
-	// 	fmt.Println(file)
-	// 	fmt.Println(lineC)
-	// 	fmt.Println(line)
-	// } else {
-	// 	fmt.Println("Ooops!")
-	// }
+	file, lineC, line, ok := runtime.Caller(1)
+	if ok {
+		fmt.Println(file)
+		fmt.Println(lineC)
+		fmt.Println(line)
+	} else {
+		fmt.Println("Ooops!")
+	}
 
 	ParserErrorMsg := "[SyntaxError] Unexpected token at "+fileName+" [S1001]" // Error
 
@@ -224,7 +244,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 
 	tok := p.peek()
 
-	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent && tok.Type != models.TokenBoolean && tok.Type != models.TokenUnOp && tok.Type != models.TokenCall{
+	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent && tok.Type != models.TokenBoolean && tok.Type != models.TokenUnOp && tok.Type != models.TokenCall && tok.Type != models.TokenObj{
 		return logicalAst
 	}
 
@@ -233,6 +253,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 	var logicalStack []string
 
 	startIn := p.In
+	Loop:
 	for !p.eof(){
 		tok = p.peek()
 
@@ -244,6 +265,10 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 				exprStack = []models.Token{}
 				p.next()
 			default:
+				if tok.Type == models.TokenNewLine{
+					break Loop
+				}
+
 				if len(stack) > 1{
 					if p.canBack() && p.peekBack().Type != models.TokenNewLine && tok.Type != models.TokenOperator && tok.Type != models.TokenNewLine{
 						if p.peekBack().Type != models.TokenBinOp && p.peekBack().Type != models.TokenOperator{
@@ -273,14 +298,18 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 					exprStack = append(exprStack, currentAstTemp[i])
 				}
 
-				if !p.canNext() && len(stack) >= 1{
-					currentAstTemp := Astnize(exprStack, fileName, p.Inside, true)[0]
-					stack = append(stack, currentAstTemp)
-					exprStack = []models.Token{}
-				}
 				p.next()
 		}
 	}
+
+
+	if len(exprStack) == 0 || len(stack) == 0{
+		return logicalAst
+	}
+
+	currentAstTemp := Astnize(exprStack, fileName, p.Inside, true)[0]
+	stack = append(stack, currentAstTemp)
+	exprStack = []models.Token{}
 
 	if len(stack) < 2{
 		p.In = startIn
@@ -339,7 +368,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 
 	tok := p.peek()
 
-	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent || tok.Type == models.TokenCall{
+	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent || tok.Type == models.TokenCall || tok.Type == models.TokenObj{
 		if !p.canNext() || p.peekNext().Type != models.TokenOperator{
 			return operatorsAst
 		}
@@ -354,7 +383,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 		tok = p.peek()
 
 		switch tok.Type{
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses, models.TokenCall:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses, models.TokenCall, models.TokenObj:
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
@@ -380,7 +409,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 					break
 				}
 			case models.TokenOperator:
-				if p.canNext() && (isLiteral(p.peekNext().Type) || p.peekNext().Type == models.TokenParentheses || p.peekNext().Type == models.TokenIdent || p.peekNext().Type == models.TokenCall){
+				if p.canNext() && (isLiteral(p.peekNext().Type) || p.peekNext().Type == models.TokenParentheses || p.peekNext().Type == models.TokenIdent || p.peekNext().Type == models.TokenCall || p.peekNext().Type == models.TokenObj){
 					operatorStack = append(operatorStack, tok.Value)
 					p.next()
 					continue
@@ -422,7 +451,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 		stack = append(stack[:maxIndex], append([]ast.Node{node}, stack[maxIndex:]...)...)
 	}
 
-	if len(stack) == 1{
+	if len(stack) == 1 || true{ // Idk why but works
 		return []ast.BinaryOpNode{stack[0].(ast.BinaryOpNode)}
 	}else{
 		p.unexpected(fileName)

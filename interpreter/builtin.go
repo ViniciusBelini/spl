@@ -19,9 +19,13 @@ func GetBuiltIn() map[string]func(node ast.FuncCall, outer *Env, fileName string
 	var BuiltInFuncs = map[string]func(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
 		"len":  BUILT_IN_len,
 		"type_of": BUILT_IN_type_of,
+
 		"__SYSTEM__io_input": BUILT_IN_SYSTEM_io_input,
 		"__SYSTEM__math_rand": BUILT_IN_SYSTEM_math_rand,
+
 		"int": BUILT_IN_SYSTEM_int,
+		"str": BUILT_IN_SYSTEM_str,
+		"float": BUILT_IN_SYSTEM_float,
 	}
 
 	return BuiltInFuncs
@@ -59,7 +63,7 @@ func BuiltInFuncsVerifyType(name string, paramsFn []string, paramsCl []ast.Node,
 		if paramsFn[i] == "dynamic" || paramsFn[i] == typeParam{
 			paramsOrg = append(paramsOrg, param)
 		}else{
-			return nil, errors.New(TRunMakeError(3, name, typeParam, paramsFn[i], fileName, line, pos))
+			return nil, errors.New(TRunMakeError(12, name, typeParam, paramsFn[i], fileName, line, pos))
 		}
 	}
 
@@ -94,8 +98,12 @@ func BUILT_IN_type_of(node ast.FuncCall, outer *Env, fileName string) (interface
 	}
 
 	getLen := checkParams[0]
-	_, typeParam := GetTypeData(getLen)
 
+	if arr, ok := getLen.([2]any);ok{
+		getLen = arr[0]
+	}
+
+	_, typeParam := GetTypeData(getLen)
 	return typeParam, nil
 }
 
@@ -110,7 +118,7 @@ func BUILT_IN_SYSTEM_io_input(node ast.FuncCall, outer *Env, fileName string) (i
 
 ///////////// system math rand
 func BUILT_IN_SYSTEM_math_rand(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
-	checkParams, err := BuiltInFuncsVerifyType("type_of", []string{models.TokenNumber, models.TokenNumber}, node.Param, outer, fileName, node.Line, node.Pos)
+	checkParams, err := BuiltInFuncsVerifyType("math_rand", []string{models.TokenNumber, models.TokenNumber}, node.Param, outer, fileName, node.Line, node.Pos)
 	if err != nil{
 		return nil, err
 	}
@@ -120,14 +128,69 @@ func BUILT_IN_SYSTEM_math_rand(node ast.FuncCall, outer *Env, fileName string) (
 	number := rand.Intn(max-min+1) + min
 	return number, nil
 }
-///////////// system math int
+///////////// system int - str - float
 func BUILT_IN_SYSTEM_int(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
-	checkParams, err := BuiltInFuncsVerifyType("type_of", []string{models.TokenString}, node.Param, outer, fileName, node.Line, node.Pos)
+	checkParams, err := BuiltInFuncsVerifyType("int", []string{models.TokenDynamic}, node.Param, outer, fileName, node.Line, node.Pos)
 	if err != nil{
 		return nil, err
 	}
 
-	str := checkParams[0].(string)
-	number, _ := strconv.Atoi(str)
-	return number, nil
+	str := checkParams[0]
+	_, typeStr := GetTypeData(str)
+	switch str.(type){
+		case string:
+			r, err := strconv.Atoi(str.(string))
+			if err != nil{
+				return nil, errors.New(TRunMakeError(13, "null", typeStr, models.TokenNumber, fileName, node.Line, node.Pos))
+			}
+			return r, nil
+		case int:
+			return str.(int), nil
+		case float64:
+			return int(str.(float64)), nil
+		default:
+			return nil, errors.New(TRunMakeError(13, "null", typeStr, models.TokenNumber, fileName, node.Line, node.Pos))
+	}
+}
+func BUILT_IN_SYSTEM_str(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
+	checkParams, err := BuiltInFuncsVerifyType("str", []string{models.TokenDynamic}, node.Param, outer, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
+
+	str := checkParams[0]
+	switch str.(type){
+		case string:
+			return str.(string), nil
+		case int:
+			return strconv.Itoa(str.(int)), nil
+		case float64:
+			return strconv.FormatFloat(str.(float64), 'f', 2, 64), nil
+		default:
+			_, typeStr := GetTypeData(str)
+			return nil, errors.New(TRunMakeError(13, "null", typeStr, models.TokenString, fileName, node.Line, node.Pos))
+	}
+}
+func BUILT_IN_SYSTEM_float(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
+	checkParams, err := BuiltInFuncsVerifyType("float", []string{models.TokenDynamic}, node.Param, outer, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
+
+	str := checkParams[0]
+	_, typeStr := GetTypeData(str)
+	switch str.(type){
+		case string:
+			r, err := strconv.ParseFloat(str.(string), 64)
+			if err != nil{
+				return nil, errors.New(TRunMakeError(13, "null", typeStr, models.TokenFloat, fileName, node.Line, node.Pos))
+			}
+			return r, nil
+		case int:
+			return float64(str.(int)), nil
+		case float64:
+			return str.(float64), nil
+		default:
+			return nil, errors.New(TRunMakeError(13, "null", typeStr, models.TokenFloat, fileName, node.Line, node.Pos))
+	}
 }

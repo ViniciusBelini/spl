@@ -12,5 +12,7 @@
     "S1011": "[SyntaxError] Function must declare a return type in strict mode",
     "S1012": "[SyntaxError] Function parameter must have an explicit type in strict mode",
     "S1013": "[SyntaxError] Invalid parameter '{0}' for function",
-    "S1014": "[SyntaxError] Function declaration missing name and parameter list"
+    "S1014": "[SyntaxError] Function declaration missing name and parameter list",
+    "S1015": "[Syntaxerror] Import require a valid namespace",
+    "S1016": "[SyntaxError] Import as expected a valid namespace"
 }

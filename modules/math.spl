@@ -1,0 +1,3 @@
+function Rand(min <int>, max <int>) <int>
+    return __SYSTEM__math_rand(min, max)
+end

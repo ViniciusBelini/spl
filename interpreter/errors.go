@@ -13,7 +13,7 @@ func TRunMakeError(id int, x string, y string, z string, fileName string, line i
 		case 2:
 			errorStr += "Cannot convert value to boolean in strict mode at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 		case 3:
-			errorStr += "Cannot assign a '"+y+"' to '"+x+"' (type "+z+") at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
+			errorStr += "Cannot assign a '"+y+"' to '"+x+"' (expected type "+z+") at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 		case 4:
 			errorStr += "Variable '"+x+"' declaration must include an explicit type in strict mode  at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]\nDid you mean: `<int> x := 5`?"
 		case 5:
@@ -30,6 +30,10 @@ func TRunMakeError(id int, x string, y string, z string, fileName string, line i
 			errorStr += "Function is required to return a '"+x+"', but no value was returned at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 		case 11:
 			errorStr += "Object of type '"+x+"' has no "+y+" at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
+		case 12:
+			errorStr += "Cannot pass a value of type '"+y+"' to parameter '"+x+"' (expected type "+z+") at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
+		case 13:
+			errorStr += "Cannot convert value of type '"+y+"' to type '"+z+"' in strict mode at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [T"+strconv.Itoa(1000+id)+"]"
 	}
 
 	return errorStr
@@ -47,6 +51,19 @@ func NRunMakeError(id int, arg string, fileName string, line int, pos int) strin
 			errorStr += "name '"+arg+"' is not defined at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [N"+strconv.Itoa(1000+id)+"]"
 		case 2:
 			errorStr += "name '"+arg+"' redeclared at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [N"+strconv.Itoa(1000+id)+"]"
+	}
+
+	return errorStr
+}
+
+func MRunMakeError(id int, arg string, fileName string, line int, pos int) string{
+	errorStr := "[ModuleError] "
+
+	switch id{
+		case 1:
+			errorStr += "Module path error at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [N"+strconv.Itoa(1000+id)+"]"
+		case 2:
+			errorStr += "File path '"+arg+"' doesnt exists at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)+" [N"+strconv.Itoa(1000+id)+"]"
 	}
 
 	return errorStr

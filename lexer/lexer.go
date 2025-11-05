@@ -14,11 +14,13 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		Type string
 		Re *regexp.Regexp
 	}{
+		{models.TokenImport, regexp.MustCompile(`(\bimport\b|\bas\b)`)},
 		{models.TokenComment, regexp.MustCompile(`(\/\/|\/\*|\*\/|#)`)},
 		{models.TokenNewLine, regexp.MustCompile(`\r?\n`)},
 		{"QUOTE", regexp.MustCompile(`("|')`)},
 		{"BACK_SLASH", regexp.MustCompile(`\\`)},
 		{models.TokenFloat, regexp.MustCompile(`-?[0-9]+\.[0-9]+`)},
+		{models.TokenList, regexp.MustCompile(`(\{|\})`)},
 		{models.TokenNumber, regexp.MustCompile(`-?[0-9]+`)},
 		{models.TokenFuncStatement, regexp.MustCompile(`(\bfunction\b)`)},
 		{models.TokenNativeSugar, regexp.MustCompile(`(\bshow\b)`)},
@@ -26,8 +28,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
 		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse if\b|\belse\b)`)},
 		{models.TokenLoopStatement, regexp.MustCompile(`(\bwhile\b)`)},
-		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>`)},
-		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
+		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>|\bdynamic\b`)},
 		{"PARENTHESE", regexp.MustCompile(`(\(|\))`)},
 		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|\|\||&&)`)},
 		{models.TokenNull, regexp.MustCompile(`\bnull\b`)},
@@ -35,7 +36,8 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenUnOp, regexp.MustCompile(`(!|\+\+|--)`)},
 		{models.TokenOperator, regexp.MustCompile(`(\+|\-|\*|\/|%|\.\.)`)},
 		{models.TokenDelimiter, regexp.MustCompile(`(;|\bend\b|:|,)`)},
-		{models.TokenObj, regexp.MustCompile(`\b[a-zA-Z_]\w*(?:\.\w+|(\[|\()\w*(\]|\)))+`)},
+		{models.TokenObj, regexp.MustCompile(`[a-zA-Z_]\w*(?:(?:\.\w+(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)|\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\])?)|(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)\.\w+)|(?:\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\]\.\w+))+(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)|\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\])?`)},
+		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
 		{models.TokenIdent, regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`)},
 		{models.TokenSpace, regexp.MustCompile(`\s+`)},
 		{models.TokenUnknown, regexp.MustCompile(`^.`)},

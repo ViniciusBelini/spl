@@ -133,6 +133,9 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 		if err != nil{
 			return nil, err
 		}
+		if arr, ok := callResult.([2]any);ok{
+			callResult = arr[0]
+		}
 
 		_, typeParam := GetTypeData(callResult)
 
@@ -142,7 +145,7 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 				return nil, err
 			}
 		}else{
-			return nil, errors.New(TRunMakeError(3, funcParam.Name, typeParam, funcParam.Type, fileName, line, pos))
+			return nil, errors.New(TRunMakeError(12, funcParam.Name, typeParam, funcParam.Type, fileName, line, pos))
 		}
 	}
 

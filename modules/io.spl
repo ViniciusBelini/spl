@@ -1,0 +1,10 @@
+function Print(message dynamic) <bool>
+	show message.."\n"
+	return true
+end
+
+function Input(message dynamic) <str>
+    show message
+    <str> response := __SYSTEM__io_input()
+    return response
+end

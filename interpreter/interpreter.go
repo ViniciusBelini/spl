@@ -36,6 +36,30 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
+			case ast.ObjCall:
+				obj1, err := Run([]ast.Node{node.(ast.ObjCall).Obj}, env, fileName, false)
+				if err != nil{
+					return nil, err
+				}
+
+				if arr, ok := obj1.([2]any);ok{
+					obj1 = arr[0]
+				}
+
+				_, typeObj := GetTypeData(obj1)
+				if typeObj == models.TokenModule{
+					result, err := Run([]ast.Node{node.(ast.ObjCall).Consequent}, obj1.(*Env), fileName, false)
+					if err != nil{
+						return nil, err
+					}
+					env.Return = result
+				}
+			case ast.ImportNode:
+				result, err := ImportFunc(node.(ast.ImportNode), env, fileName)
+				if err != nil{
+					return nil, err
+				}
+				env.Return = result
 			case ast.FuncCall:
 				if BuiltInFuncsExists(node.(ast.FuncCall).Name){
 					result, err := BuiltInFuncsCall(node.(ast.FuncCall), env, fileName)
@@ -89,7 +113,12 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					if err != nil{
 						return nil, err
 					}
-					fmt.Printf("%v", value)
+
+					if arr, ok := value.([2]any);ok{
+						fmt.Printf("%v", arr[1])
+					}else{
+						fmt.Printf("%v", value)
+					}
 					env.Return = true
 				}
 			case ast.IdentNode:
@@ -98,7 +127,12 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					return nil, err
 				}
 
-				env.Return = varData.Value
+				_, typeData := GetTypeData(varData.Value)
+				if typeData == models.TokenModule{
+					env.Return = [2]any{varData.Value, models.TokenModule+"("+node.(ast.IdentNode).Name+")"}
+				}else{
+					env.Return = varData.Value
+				}
 			case ast.AssignNode:
 				value, err := AssignVariable(node.(ast.AssignNode), env, fileName)
 				if err != nil{
@@ -272,6 +306,10 @@ func GetTypeData(x interface{})(int, string){
 			return 2, models.TokenFloat
 		case bool:
 			return 3, models.TokenBoolean
+		case *Env:
+			return 4, models.TokenModule
+		case nil:
+			return 5, models.TokenNull
 		default:
 			return -1, models.TokenUnknown
 	}

@@ -2,6 +2,14 @@ package ast
 
 type Node interface{}
 
+type ImportNode struct{
+	Path		string
+	As		string
+	String		bool
+	Line		int
+	Pos		int
+}
+
 type AssignNode struct{
 	Name		string
 	Type		string
@@ -48,6 +56,13 @@ type ParamNode struct{
 type FuncCall struct{
 	Name		string
 	Param		[]Node
+	Line		int
+	Pos		int
+}
+
+type ObjCall struct{
+	Obj		Node
+	Consequent	Node
 	Line		int
 	Pos		int
 }
