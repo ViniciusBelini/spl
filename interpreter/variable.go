@@ -3,6 +3,7 @@ package interpreter
 import(
 	// "fmt"
 	"errors"
+	// "reflect"
 
 	"SPL/config"
 	"SPL/ast"
@@ -10,14 +11,31 @@ import(
 
 // Assign variable
 func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface{}, error){
-	if node.Method == ":=" || (node.Method == "=" && config.Config["mode"] == "dynamic"){
+	if node.Method == ":=" || (node.Method == "=" && config.Config["mode"] == "dynamic" && node.NamePonter == nil){
 		value, err := Run([]ast.Node{node.Value}, outer, fileName, false)
 		if err != nil{
 			return value, err
 		}
 
+		if arr, ok := value.([2]any);ok{
+			value = arr[0]
+		}
+
+		namePointer, err := Run([]ast.Node{node.NamePonter}, outer, fileName, false)
+		if err != nil{
+			return nil, err
+		}
+
+		if arr, ok := namePointer.([2]any);ok{
+			namePointer = arr[0]
+		}
+
 		if node.Type == "dynamic" && config.Config["mode"] == "strict"{
 			return nil, errors.New(TRunMakeError(4, node.Name, "null", "null", fileName, node.Line, node.Pos))
+		}
+
+		if node.Type == "<dynamic>"{
+			node.Type = "dynamic"
 		}
 
 		newVar, err := DefineVariable(node.Name, value, node.Type, outer, fileName, node.Line, node.Pos)
@@ -42,6 +60,24 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 		value, err := Run([]ast.Node{node.Value}, outer, fileName, false)
 		if err != nil{
 			return value, err
+		}
+
+		if arr, ok := value.([2]any);ok{
+			value = arr[0]
+		}
+
+		if node.NamePonter != nil{
+			// _, err := Run([]ast.Node{node.NamePonter}, outer, fileName, false)
+			// if err != nil{
+				// return nil, err
+			// }
+
+			result, err := SetArrValue(node.NamePonter.(ast.ArrayAccess).Base, node.NamePonter.(ast.ArrayAccess).Key, value, node.NamePonter.(ast.ArrayAccess).Line, node.NamePonter.(ast.ArrayAccess).Pos, outer, fileName)
+			if err != nil{
+				return nil, err
+			}
+
+			return result, nil
 		}
 
 		_, err = SetVariable(node.Name, value, outer, fileName, node.Line, node.Pos)
@@ -102,6 +138,24 @@ func ForceDefineVariable(name string, value interface{}, vType string, outer *En
 	}
 
 	return outer.Variables[name], nil
+}
+func DefineGlobalVariable(name string, value interface{}, vType string, outer *Env, fileName string, line int, pos int) (*Vars, error){
+	_, err := GetVariable(name, outer, fileName, line, pos)
+	if err == nil{
+		return nil, errors.New(NRunMakeError(2, name, fileName, line, pos))
+	}
+
+	_, nType := GetTypeData(value)
+	if vType != nType && vType != "dynamic"{
+		return nil, errors.New(TRunMakeError(3, name, nType, vType, fileName, line, pos))
+	}
+
+	outer.GlobalVars[name] = &Vars{
+		Value: value,
+		Type: vType,
+	}
+
+	return outer.GlobalVars[name], nil
 }
 
 func SetVariable(name string, value interface{}, outer *Env, fileName string, line int, pos int) (*Vars, error){

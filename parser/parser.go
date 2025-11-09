@@ -33,6 +33,27 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 		tok := p.peek()
 
 		switch tok.Type{
+			case models.TokenList:
+				pTemp := p
+				tempAST := p.ArrayOne(fileName)
+				if len(tempAST) > 0{
+					p.Ast = append(p.Ast, tempAST)
+					continue
+				}
+				p = pTemp
+				p.unexpected(fileName)
+			case models.TokenListGroup:
+				var tokensList []models.Token
+				tokensList = append(tokensList, models.Token{Value: "{", Type: models.TokenList, Line: tok.Line, Pos: tok.Pos})
+				newTokens := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
+				for i := 0;i < len(newTokens);i++{
+					tokensList = append(tokensList, newTokens[i])
+				}
+				tokensList = append(tokensList, models.Token{Value: "}", Type: models.TokenList, Line: tok.Line, Pos: tok.Pos})
+
+				p.Ast = append(p.Ast, Astnize(tokensList, fileName, p.Inside, statementExpr)[0])
+
+				p.next()
 			case models.TokenImport:
 				pTemp := p
 				tempAST := p.ImportSys(fileName)
@@ -51,15 +72,6 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 				p.unexpected(fileName)
-			case models.TokenArrayAccess:
-				pTemp := p
-				tempAST := p.ObjCall(fileName)
-				if len(tempAST) > 0{
-					p.Ast = append(p.Ast, tempAST[0])
-					continue
-				}
-				p = pTemp
-				p.unexpected(fileName)
 			case models.TokenNativeSugar:
 				p.NativeSugar(fileName)
 			case models.TokenNewLine:
@@ -73,7 +85,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 					continue
 				}else if len(tempAST) > 0{
 					p.back()
-					p.generic("[SyntaxError] '=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
+					p.generic("'=' (ASSIGN) is not valid here in strict mode – variable declarations must be top-level", "S1006", fileName) // Error
 				}
 				// REMIDER: allow variable declaration without value `<int> age;` - ; is optional
 				p = pTemp
@@ -102,9 +114,9 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				}
 				p = pTemp
 				p.unexpected(fileName)
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenUnOp, models.TokenCall, models.TokenObj:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenUnOp, models.TokenCall, models.TokenObj, models.TokenArrayAccess:
 				pTemp := p
-				if tok.Type == models.TokenIdent{
+				if tok.Type == models.TokenIdent || tok.Type == models.TokenArrayAccess{
 					tempAST := p.VariableAssignment(fileName)
 					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 						p.Ast = append(p.Ast, tempAST[0])
@@ -157,6 +169,17 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				if tok.Type == models.TokenObj{
 					pTemp := p
 					tempAST := p.ObjCall(fileName)
+					if len(tempAST) > 0{
+						p.Ast = append(p.Ast, tempAST[0])
+						continue
+					}
+					p = pTemp
+					p.unexpected(fileName)
+				}
+
+				if tok.Type == models.TokenArrayAccess{
+					pTemp := p
+					tempAST := p.ArrayAccess(fileName)
 					if len(tempAST) > 0{
 						p.Ast = append(p.Ast, tempAST[0])
 						continue
@@ -244,7 +267,7 @@ func (p *Parser) ParserLogical(fileName string) []ast.BinaryOpNode{
 
 	tok := p.peek()
 
-	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent && tok.Type != models.TokenBoolean && tok.Type != models.TokenUnOp && tok.Type != models.TokenCall && tok.Type != models.TokenObj{
+	if !isLiteral(tok.Type) && tok.Type != models.TokenParentheses && tok.Type != models.TokenIdent && tok.Type != models.TokenBoolean && tok.Type != models.TokenUnOp && tok.Type != models.TokenCall && tok.Type != models.TokenObj && tok.Type != models.TokenArrayAccess{
 		return logicalAst
 	}
 
@@ -368,7 +391,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 
 	tok := p.peek()
 
-	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent || tok.Type == models.TokenCall || tok.Type == models.TokenObj{
+	if isLiteral(tok.Type) || tok.Type == models.TokenParentheses || tok.Type == models.TokenIdent || tok.Type == models.TokenCall || tok.Type == models.TokenObj || tok.Type == models.TokenArrayAccess{
 		if !p.canNext() || p.peekNext().Type != models.TokenOperator{
 			return operatorsAst
 		}
@@ -383,7 +406,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 		tok = p.peek()
 
 		switch tok.Type{
-			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses, models.TokenCall, models.TokenObj:
+			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenParentheses, models.TokenCall, models.TokenObj, models.TokenArrayAccess:
 				var currentAst ast.Node
 				if tok.Type == models.TokenParentheses{
 					currentAstTemp := lexer.Tokenize(tok.Value[1 : len(tok.Value)-1], fileName, tok.Line, tok.Pos)
@@ -409,7 +432,7 @@ func (p *Parser) ParseOperators(fileName string) []ast.BinaryOpNode{
 					break
 				}
 			case models.TokenOperator:
-				if p.canNext() && (isLiteral(p.peekNext().Type) || p.peekNext().Type == models.TokenParentheses || p.peekNext().Type == models.TokenIdent || p.peekNext().Type == models.TokenCall || p.peekNext().Type == models.TokenObj){
+				if p.canNext() && (isLiteral(p.peekNext().Type) || p.peekNext().Type == models.TokenParentheses || p.peekNext().Type == models.TokenIdent || p.peekNext().Type == models.TokenCall || p.peekNext().Type == models.TokenObj || p.peekNext().Type == models.TokenArrayAccess){
 					operatorStack = append(operatorStack, tok.Value)
 					p.next()
 					continue

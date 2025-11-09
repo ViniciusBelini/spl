@@ -14,5 +14,7 @@
     "S1013": "[SyntaxError] Invalid parameter '{0}' for function",
     "S1014": "[SyntaxError] Function declaration missing name and parameter list",
     "S1015": "[Syntaxerror] Import require a valid namespace",
-    "S1016": "[SyntaxError] Import as expected a valid namespace"
+    "S1016": "[SyntaxError] Import as expected a valid namespace",
+    "S1017": "[SyntaxError] Expected ',' before end of value in list",
+    "S1018": "[SyntaxError] Missing value in list declaration"
 }

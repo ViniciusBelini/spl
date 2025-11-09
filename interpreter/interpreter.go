@@ -6,6 +6,7 @@ import(
 	"strconv"
 	"errors"
 	// "strings"
+	// "encoding/json"
 
 	"SPL/config"
 	"SPL/models"
@@ -36,6 +37,24 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 	for i := 0;i < len(aAst);i++{
 		node := aAst[i]
 		switch node.(type){
+			case ast.ArrayAccess:
+				value, err := GetArr(node.(ast.ArrayAccess).Base, node.(ast.ArrayAccess).Key, node.(ast.ArrayAccess).Line, node.(ast.ArrayAccess).Pos, env, fileName)
+				if err != nil{
+					return nil, err
+				}
+				env.Return = value
+			case []ast.ArrayOneItem:
+				result, err := ListForm(node.([]ast.ArrayOneItem), env, fileName)
+				if err != nil{
+					return nil, err
+				}
+
+				splData, err := convertSplData(result, "")
+				if err != nil{
+					return nil, err
+				}
+
+				env.Return = [2]any{result, splData}
 			case ast.ObjCall:
 				obj1, err := Run([]ast.Node{node.(ast.ObjCall).Obj}, env, fileName, false)
 				if err != nil{
@@ -48,10 +67,18 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 
 				_, typeObj := GetTypeData(obj1)
 				if typeObj == models.TokenModule{
+					tmpScope := obj1.(*Env).Outer
+					obj1.(*Env).Outer = env
 					result, err := Run([]ast.Node{node.(ast.ObjCall).Consequent}, obj1.(*Env), fileName, false)
+					obj1.(*Env).Outer = tmpScope
 					if err != nil{
 						return nil, err
 					}
+
+					if arr, ok := result.([2]any);ok{
+						result = arr[0]
+					}
+
 					env.Return = result
 				}
 			case ast.ImportNode:
@@ -106,7 +133,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 						}
 				}
 			case ast.NullNode:
-				env.Return = nil
+				env.Return = [2]any{nil, "null"}
 			case ast.NativeSugarNode:
 				if node.(ast.NativeSugarNode).Name == "show"{
 					value, err := Run([]ast.Node{node.(ast.NativeSugarNode).Value}, env, fileName, false)
@@ -127,9 +154,16 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					return nil, err
 				}
 
-				_, typeData := GetTypeData(varData.Value)
+				id, typeData := GetTypeData(varData.Value)
 				if typeData == models.TokenModule{
 					env.Return = [2]any{varData.Value, models.TokenModule+"("+node.(ast.IdentNode).Name+")"}
+				}else if id == 6 || id == 7{
+					splData, err := convertSplData(varData.Value, "")
+					if err != nil{
+						return nil, err
+					}
+
+					env.Return = [2]any{varData.Value, splData}
 				}else{
 					env.Return = varData.Value
 				}
@@ -256,7 +290,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				}
 
 				continue
-			case ast.FuncStatement:
+			case ast.FuncStatement, nil:
 				// Just skip
 				continue
 			default:
@@ -310,7 +344,55 @@ func GetTypeData(x interface{})(int, string){
 			return 4, models.TokenModule
 		case nil:
 			return 5, models.TokenNull
+		case map[any]any:
+			keyType := ""
+			valueType := ""
+			for key, value := range x.(map[any]any){
+				_, getKeyT := GetTypeData(key)
+				_, getValueT := GetTypeData(value)
+
+				if keyType == "" && valueType == ""{
+					keyType = getKeyT
+					valueType = getValueT
+				}
+
+				if keyType != getKeyT || valueType != getValueT{
+					keyType = "dynamic"
+					valueType = "dynamic"
+				}
+			}
+
+			if keyType != "dynamic"{
+				keyType = keyType[1: len(keyType)-1]
+			}
+			if valueType == models.TokenString || valueType == models.TokenNumber || valueType == models.TokenFloat || valueType == models.TokenBoolean{
+				valueType = valueType[1: len(valueType)-1]
+			}
+
+			return 6, "map<"+keyType+":"+valueType+">"
+		case []any:
+			valueType := ""
+			for i := 0;i < len(x.([]any));i++{
+				value := x.([]any)[i]
+
+				_, getValueT := GetTypeData(value)
+
+				if valueType == ""{
+					valueType = getValueT
+				}
+
+				if valueType != getValueT{
+					valueType = "dynamic"
+				}
+			}
+
+			if valueType[0:1] == "<" && valueType[len(valueType)-1:len(valueType)] == ">"{
+				valueType = valueType[1:len(valueType)-1]
+			}
+
+			return 7, "array<"+valueType+">"
 		default:
+			// fmt.Println(reflect.TypeOf(x))
 			return -1, models.TokenUnknown
 	}
 }

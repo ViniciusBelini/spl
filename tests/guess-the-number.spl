@@ -2,7 +2,6 @@ import io
 import math
 
 // Guess the number!
-
 io.Print("Guess the number!")
 
 function start() <bool>

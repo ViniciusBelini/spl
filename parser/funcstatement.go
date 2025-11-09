@@ -247,3 +247,44 @@ func splitFirstObject(expr string) (string, string){ // helper
 
 	return expr, ""
 }
+
+func (p *Parser) ArrayAccess(fileName string) []ast.ArrayAccess{
+	var callAst []ast.ArrayAccess
+
+	if p.eof() || p.peek().Type != models.TokenArrayAccess{
+		return callAst
+	}
+
+	tok := p.peek()
+	tokInit := tok
+
+	openParen := strings.Index(tok.Value, "[")
+	closeParen := strings.LastIndex(tok.Value, "]")
+
+	if openParen == -1 || closeParen == -1 || closeParen <= openParen{
+		p.unexpected(fileName) // Error
+		return callAst
+	}
+
+	accessName := tok.Value[:openParen]
+	params := tok.Value[openParen : closeParen+1]
+
+	accessKey := lexer.Tokenize(params, fileName, tokInit.Line, tokInit.Pos)
+	accessAst := Astnize([]models.Token{accessKey[len(accessKey)-1]}, fileName, accessName, true)
+
+	base := accessName
+	if len(accessKey) > 1{
+		for i := 0;i < len(accessKey);i++{
+			if i == len(accessKey)-1{
+				continue
+			}
+			base += accessKey[i].Value
+		}
+	}
+	accessResult := Astnize(lexer.Tokenize(base, fileName, tokInit.Line, tokInit.Pos), fileName, accessName, true)
+
+	callAst = append(callAst, ast.ArrayAccess{Key: accessAst, Base: accessResult, Line: tokInit.Line, Pos: tokInit.Pos})
+
+	p.next()
+	return callAst
+}

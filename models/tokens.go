@@ -1,7 +1,9 @@
 package models
 
 const(
+	TokenArray		= "ARRAY_ACCESS"
 	TokenList		= "LIST"
+	TokenListGroup		= "LIST_GROUP"
 	TokenImport		= "IMPORT"
 	TokenNewLine		= "NEW_LINE"
 	TokenString		= "<str>"

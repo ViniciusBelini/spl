@@ -124,6 +124,7 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 	}
 
 	env := NewEnv(outer)
+	env.GlobalVars = outer.GlobalVars
 
 	for i := 0;i < len(funcP.Param);i++{
 		funcParam := funcP.Param[i]
@@ -150,6 +151,7 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 	}
 
 	returnFunc, err := Run(funcP.Consequent, env, fileName, false)
+
 	if err != nil{
 		return nil, err
 	}

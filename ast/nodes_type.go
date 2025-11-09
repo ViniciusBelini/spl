@@ -2,6 +2,19 @@ package ast
 
 type Node interface{}
 
+type ArrayOne struct{
+	Items		[]ArrayOneItem
+	Type		string
+	Line		int
+	Pos		int
+}
+type ArrayOneItem struct{
+	Left		Node
+	Right		Node
+	Line		int
+	Pos		int
+}
+
 type ImportNode struct{
 	Path		string
 	As		string
@@ -12,6 +25,7 @@ type ImportNode struct{
 
 type AssignNode struct{
 	Name		string
+	NamePonter	Node
 	Type		string
 	Value		Node
 	Method		string
@@ -56,6 +70,13 @@ type ParamNode struct{
 type FuncCall struct{
 	Name		string
 	Param		[]Node
+	Line		int
+	Pos		int
+}
+
+type ArrayAccess struct{
+	Base		[]Node
+	Key		[]Node
 	Line		int
 	Pos		int
 }

@@ -14,6 +14,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		Type string
 		Re *regexp.Regexp
 	}{
+		{models.TokenList, regexp.MustCompile(`(\{|\})`)},
 		{models.TokenImport, regexp.MustCompile(`(\bimport\b|\bas\b)`)},
 		{models.TokenComment, regexp.MustCompile(`(\/\/|\/\*|\*\/|#)`)},
 		{models.TokenNewLine, regexp.MustCompile(`\r?\n`)},
@@ -28,7 +29,7 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
 		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse if\b|\belse\b)`)},
 		{models.TokenLoopStatement, regexp.MustCompile(`(\bwhile\b)`)},
-		{models.TokenType, regexp.MustCompile(`\<(int|str|bool|float)\>|\bdynamic\b`)},
+		{models.TokenType, regexp.MustCompile(`(\bmap|\barray)?<(int|str|bool|float)(:(.*))?>|\bdynamic\b`)},
 		{"PARENTHESE", regexp.MustCompile(`(\(|\))`)},
 		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|\|\||&&)`)},
 		{models.TokenNull, regexp.MustCompile(`\bnull\b`)},
@@ -38,6 +39,8 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenDelimiter, regexp.MustCompile(`(;|\bend\b|:|,)`)},
 		{models.TokenObj, regexp.MustCompile(`[a-zA-Z_]\w*(?:(?:\.\w+(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)|\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\])?)|(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)\.\w+)|(?:\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\]\.\w+))+(?:\([^()]*?(?:\([^()]*\)[^()]*)*\)|\[[^\[\]]*?(?:\[[^\[\]]*\][^\[\]]*)*\])?`)},
 		{models.TokenCall, regexp.MustCompile(`([a-zA-Z0-9_]+)\((.*?)\)`)},
+		// {models.TokenArrayAccess, regexp.MustCompile(`([a-zA-Z0-9_]+)\[(.*?)\]`)},
+		{models.TokenArray, regexp.MustCompile(`(\[|\])`)},
 		{models.TokenIdent, regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`)},
 		{models.TokenSpace, regexp.MustCompile(`\s+`)},
 		{models.TokenUnknown, regexp.MustCompile(`^.`)},
@@ -148,6 +151,38 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 			}
 		}
 
+		if running || running == false && runner["breaker"] == "ARRAY_ACCESS"{
+			if running && tok.Type == models.TokenIdent && i+1 < len(tokens) && tokens[i+1].Type == models.TokenArray && tokens[i+1].Value == "["{
+				running = false
+				runner["breaker"] = "ARRAY_ACCESS"
+				runner["helper"] = tok.Value
+				runner["helper_2"] = tok.Value
+				tempLine = tok.Line
+				tempPos = tok.Pos
+				tempOnce = 0
+				continue
+			}
+
+			if !running{
+				runner["helper"] += tok.Value
+				if tok.Type == models.TokenArray && tok.Value == "["{
+					tempOnce++
+				}else if tok.Type == models.TokenArray && tok.Value == "]"{
+					tempOnce--
+
+					if tempOnce == 0{
+						if (i+1 < len(tokens) && tokens[i+1].Type == models.TokenArray && tokens[i+1].Value == "["){
+							continue
+						}
+						running = true
+
+						n_tokens = append(n_tokens, models.Token{models.TokenArrayAccess, runner["helper"], tempLine, tempPos})
+					}
+				}
+				continue
+			}
+		}
+
 		if running || running == false && runner["breaker"] == "PARENTHESE"{
 			if running && tok.Type == "PARENTHESE" && tok.Value == "("{
 				running = false
@@ -175,6 +210,62 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 				continue
 			}
 		}
+		if running || running == false && runner["breaker"] == "PARENTHESE_S"{
+			if running && tok.Type == models.TokenArray && tok.Value == "["{
+				running = false
+				runner["breaker"] = "PARENTHESE_S"
+				runner["helper"] = tok.Value
+				runner["helper_2"] = tok.Value
+				tempLine = tok.Line
+				tempPos = tok.Pos
+				tempOnce = 1
+				continue
+			}
+
+			if !running{
+				runner["helper"] += tok.Value
+				if tok.Type == models.TokenArray && tok.Value == "["{
+					tempOnce++
+				}else if tok.Type == models.TokenArray && tok.Value == "]"{
+					tempOnce--
+
+					if tempOnce == 0{
+						running = true
+						n_tokens = append(n_tokens, models.Token{models.TokenParentheses, runner["helper"], tempLine, tempPos})
+					}
+				}
+				continue
+			}
+		}
+
+		if running || running == false && runner["breaker"] == "LIST_BLOCK"{
+			if running && tok.Type == "LIST" && tok.Value == "{"{
+				running = false
+				runner["breaker"] = "LIST_BLOCK"
+				runner["helper"] = tok.Value
+				runner["helper_2"] = tok.Value
+				tempLine = tok.Line
+				tempPos = tok.Pos
+				tempOnce = 1
+				continue
+			}
+
+			if !running{
+				runner["helper"] += tok.Value
+				if tok.Type == "LIST" && tok.Value == "{"{
+					tempOnce++
+				}else if tok.Type == "LIST" && tok.Value == "}"{
+					tempOnce--
+
+					if tempOnce == 0{
+						running = true
+
+						n_tokens = append(n_tokens, models.Token{models.TokenListGroup, runner["helper"], tempLine, tempPos})
+					}
+				}
+				continue
+			}
+		}
 
 		if running && tok.Type != models.TokenSpace{
 			n_tokens = append(n_tokens, models.Token{tok.Type, tok.Value, tok.Line, tok.Pos})
@@ -186,6 +277,10 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 			errors.ParserError("[SyntaxError] Unterminated string literal starting at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
 		}else if runner["breaker"] == "PARENTHESE"{
 			errors.ParserError("[SyntaxError] Expected ')' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
+		}else if runner["breaker"] == "LIST_BLOCK"{
+			errors.ParserError("[SyntaxError] Expected '}' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
+		}else if runner["breaker"] == "ARRAY_ACCESS"{
+			errors.ParserError("[SyntaxError] Expected ']' before end of input at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1008]", true)
 		}else{
 			errors.ParserError("[SyntaxError] Unexpected token at "+fileName+":"+strconv.Itoa(tempLine)+":"+strconv.Itoa(tempPos)+" [S1007]", true)
 		}

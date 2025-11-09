@@ -1,0 +1,7 @@
+function Encode(data dynamic) <str>
+    return __SYSTEM__json_encode(data)
+end
+
+function Decode(data <str>) dynamic
+    return __SYSTEM__json_decode(data)
+end

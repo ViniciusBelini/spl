@@ -50,7 +50,7 @@ func ImportFunc(node ast.ImportNode, outer *Env, fileName string) (*Env, error){
 	newEnv := NewEnv(outer)
 	Run(importNode, newEnv, fileName, false)
 
-	_, err = DefineVariable(node.As, newEnv, models.TokenModule, outer, fileName, node.Line, node.Pos)
+	_, err = DefineGlobalVariable(node.As, newEnv, models.TokenModule, outer, fileName, node.Line, node.Pos)
 	if err != nil{
 		return nil, err
 	}

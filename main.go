@@ -80,7 +80,7 @@ func run(allTokens []models.Token, fileName string) bool{
 	}
 
 	// fmt.Println(msg)
-	// fmt.Printf("%#v\n", allTokens)
+	// fmt.Printf("%#v\n", ast)
 
 	//jsonData, _ := json.MarshalIndent(ast, "", "   ")
 

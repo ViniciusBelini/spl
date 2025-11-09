@@ -1,5 +1,6 @@
 function Print(message dynamic) <bool>
-	show message.."\n"
+	show message
+	show "\n"
 	return true
 end
 
