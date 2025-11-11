@@ -2,6 +2,7 @@ package interpreter
 
 import(
 	// "fmt"
+	// "runtime"
 	"errors"
 	// "reflect"
 
@@ -38,8 +39,8 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 			node.Type = "dynamic"
 		}
 
-		newVar, err := DefineVariable(node.Name, value, node.Type, outer, fileName, node.Line, node.Pos)
-		_, err2 := GetVariable(node.Name, outer, fileName, node.Line, node.Pos)
+		newVar, err := DefineVariable(node.Name, value, node.Type, outer, fileName, node.Line, node.Pos, true)
+		_, err2 := GetVariable(node.Name, outer, fileName, node.Line, node.Pos, true)
 
 		if err != nil && err2 != nil{
 			return nil, err
@@ -90,26 +91,28 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 	return nil, nil
 }
 
-func GetVariable(name string, outer *Env, fileName string, line int, pos int) (*Vars, error){
+func GetVariable(name string, outer *Env, fileName string, line int, pos int, define bool) (*Vars, error){
 	if varVal, exists := outer.Variables[name];exists{
 		return varVal, nil
 	}else{
-		if varVal, exists := outer.GlobalVars[name];exists{
-			return varVal, nil
-		}
-
-		if outer.Outer != nil{
-			varVal, err := GetVariable(name, outer.Outer, fileName, line, pos)
-			if err == nil{
+		if !define{
+			if varVal, exists := outer.GlobalVars[name];exists{
 				return varVal, nil
+			}
+
+			if outer.Outer != nil && outer.GlobalAccess{
+				varVal, err := GetVariable(name, outer.Outer, fileName, line, pos, define)
+				if err == nil{
+					return varVal, nil
+				}
 			}
 		}
 		return nil, errors.New(NRunMakeError(1, name, fileName, line, pos))
 	}
 }
 
-func DefineVariable(name string, value interface{}, vType string, outer *Env, fileName string, line int, pos int) (*Vars, error){
-	_, err := GetVariable(name, outer, fileName, line, pos)
+func DefineVariable(name string, value interface{}, vType string, outer *Env, fileName string, line int, pos int, define bool) (*Vars, error){
+	_, err := GetVariable(name, outer, fileName, line, pos, true)
 	if err == nil{
 		return nil, errors.New(NRunMakeError(2, name, fileName, line, pos))
 	}
@@ -140,7 +143,7 @@ func ForceDefineVariable(name string, value interface{}, vType string, outer *En
 	return outer.Variables[name], nil
 }
 func DefineGlobalVariable(name string, value interface{}, vType string, outer *Env, fileName string, line int, pos int) (*Vars, error){
-	_, err := GetVariable(name, outer, fileName, line, pos)
+	_, err := GetVariable(name, outer, fileName, line, pos, true)
 	if err == nil{
 		return nil, errors.New(NRunMakeError(2, name, fileName, line, pos))
 	}
@@ -159,7 +162,7 @@ func DefineGlobalVariable(name string, value interface{}, vType string, outer *E
 }
 
 func SetVariable(name string, value interface{}, outer *Env, fileName string, line int, pos int) (*Vars, error){
-	varVal, err := GetVariable(name, outer, fileName, line, pos)
+	varVal, err := GetVariable(name, outer, fileName, line, pos, false)
 	if err != nil{
 		return nil, errors.New(NRunMakeError(1, name, fileName, line, pos))
 	}

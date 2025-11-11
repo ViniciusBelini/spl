@@ -2,20 +2,24 @@ import io
 import math
 
 // Guess the number!
-io.Print("Guess the number!")
+print("Guess the number!")
 
 function start() <bool>
     <int> number := math.Rand(0, 100)
     while true
         <str> strGuess := io.Input("Choose a number between 0 and 100: ")
+        if !math.IsInt(strGuess)
+            print("It is not a valid number!")
+            continue
+        end
         <int> guess := int(strGuess)
 
         if guess > number
-            io.Print("Too high!")
+            print("Too high!")
         else if guess < number
-            io.Print("Too low")
+            print("Too low")
         else if guess == number
-            io.Print("Congratulations! You won the game.")
+            print("Congratulations! You won the game.")
             return true
         end
     end

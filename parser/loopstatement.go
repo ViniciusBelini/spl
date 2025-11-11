@@ -63,7 +63,7 @@ func (p *Parser) WhileStatement(fileName string) []ast.LoopStatement{
 
 	if len(loopBlock) == 0{
 		p.In = startIn
-		p.generic("[SyntaxError] Missing 'end' of 'while' statement", "S1005", fileName) // Error
+		p.generic("Missing 'end' of 'while' statement", "S1005", fileName) // Error
 	}
 
 	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{

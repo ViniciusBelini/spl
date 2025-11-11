@@ -1,3 +1,58 @@
 function Rand(min <int>, max <int>) <int>
     return __SYSTEM__math_rand(min, max)
 end
+
+function IsNumber(number <str>) <bool>
+    <int> i := 0
+    <bool> isFloat := false
+    while i < len(number)
+        <str> n := number[i]
+        if (n == "-" && i == 0) || (n == "0" || n == "1" || n == "2" || n == "3" || n == "4" || n == "5" || n == "6" || n == "7" || n == "8" || n == "9")
+            i += 1
+            continue
+        else if n == "."
+            if isFloat
+                return false
+            end
+            isFloat = true
+            i += 1
+            continue
+        end
+        return false
+    end
+    return true
+end
+
+function IsFloat(number <str>) <bool>
+    <int> i := 0
+    <bool> isFloat := false
+    while i < len(number)
+        <str> n := number[i]
+        if (n == "-" && i == 0) || (n == "0" || n == "1" || n == "2" || n == "3" || n == "4" || n == "5" || n == "6" || n == "7" || n == "8" || n == "9")
+            i += 1
+            continue
+        else if n == "."
+            if isFloat
+                return false
+            end
+            isFloat = true
+            i += 1
+            continue
+        end
+        return false
+    end
+    return isFloat
+end
+
+function IsInt(number <str>) <bool>
+    <int> i := 0
+    while i < len(number)
+        <str> n := number[i]
+        if (n == "-" && i == 0) || (n == "0" || n == "1" || n == "2" || n == "3" || n == "4" || n == "5" || n == "6" || n == "7" || n == "8" || n == "9")
+            i += 1
+            continue
+        end
+        return false
+    end
+    return true
+end

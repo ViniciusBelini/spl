@@ -13,6 +13,7 @@
     <list name="keywords">
       <item>function</item>
       <item>import</item>
+      <item>as</item>
     </list>
     <list name="controlflow">
       <item>break</item>
@@ -21,7 +22,6 @@
       <item>if</item>
       <item>else</item>
       <item>while</item>
-      <item>for</item>
       <item>end</item>
     </list>
 

@@ -108,6 +108,10 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					return nil, err
 				}
 
+				if arr, ok := argument.([2]any);ok{
+					argument = arr[0]
+				}
+
 				return [2]any{method, argument}, nil
 			case ast.IfStatement, ast.LoopStatement:
 				switch node.(type){
@@ -149,7 +153,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					env.Return = true
 				}
 			case ast.IdentNode:
-				varData, err := GetVariable(node.(ast.IdentNode).Name, env, fileName, node.(ast.IdentNode).Line, node.(ast.IdentNode).Pos)
+				varData, err := GetVariable(node.(ast.IdentNode).Name, env, fileName, node.(ast.IdentNode).Line, node.(ast.IdentNode).Pos, false)
 				if err != nil{
 					return nil, err
 				}
@@ -212,10 +216,16 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				if err != nil{
 					return left, err
 				}
+				if arr, ok := left.([2]any);ok{
+					left = arr[0]
+				}
 
 				right, err := Run([]ast.Node{node.(ast.BinaryOpNode).Right}, env, fileName, false)
 				if err != nil{
 					return right, err
+				}
+				if arr, ok := right.([2]any);ok{
+					right = arr[0]
 				}
 
 				switch node.(ast.BinaryOpNode).Operator{

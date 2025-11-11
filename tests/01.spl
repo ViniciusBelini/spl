@@ -1,7 +1,3 @@
 import io
-import json
 
-<str> textJson := io.Input("Type your valid JSON: ")
-dynamic jsonCode := json.Decode(textJson)
-
-print(jsonCode)
+io.Print("Year: "..int(2025))

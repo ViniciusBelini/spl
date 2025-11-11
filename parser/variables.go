@@ -71,11 +71,13 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		varData.NameReal = tmpVname[0]
 	}
 
-	if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "-="){
+	if tok.Type == models.TokenAssign && (tok.Value == "+=" || tok.Value == "-=" || tok.Value == "..="){
 		varData.Value = append(varData.Value, tmpIdent)
 		method := "+"
 		if tok.Value == "-="{
 			method = "-"
+		}else if tok.Value == "..="{
+			method = ".."
 		}
 
 		varData.Value = append(varData.Value, models.Token{Type: models.TokenOperator, Value: method, Line: tmpIdent.Line, Pos: tmpIdent.Pos})

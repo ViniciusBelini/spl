@@ -48,7 +48,8 @@ func ImportFunc(node ast.ImportNode, outer *Env, fileName string) (*Env, error){
 	importNode := parser.Astnize(allTokens, fileName, "null", false)
 
 	newEnv := NewEnv(outer)
-	Run(importNode, newEnv, fileName, false)
+	newEnv.GlobalAccess = true
+	Run(importNode, newEnv, path, false)
 
 	_, err = DefineGlobalVariable(node.As, newEnv, models.TokenModule, outer, fileName, node.Line, node.Pos)
 	if err != nil{

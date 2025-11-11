@@ -4,6 +4,7 @@ import(
 	// "fmt"
 	"errors"
 	"strconv"
+	// "reflect"
 
 	"SPL/config"
 	"SPL/models"
@@ -44,13 +45,13 @@ func IfStatement(node ast.IfStatement, outer *Env, fileName string) (interface{}
 
 // Loop statement
 func LoopStatement(node ast.LoopStatement, outer *Env, fileName string) (interface{}, error){
-	env := outer
-	if config.Config["mode"] == "strict"{
-		env = NewEnv(outer)
-		env.GlobalAccess = true
-	}
-
 	for true{
+		env := outer
+		if config.Config["mode"] == "strict"{
+			env = NewEnv(outer)
+			env.GlobalAccess = true
+		}
+
 		value, err := Run([]ast.Node{node.Test}, env, fileName, false)
 		if err != nil{
 			return nil, err
@@ -70,7 +71,7 @@ func LoopStatement(node ast.LoopStatement, outer *Env, fileName string) (interfa
 					}else if arr[0].(string) == "break"{
 						break
 					}else if arr[0].(string) == "return"{
-						return arr[1], nil
+						return arr, nil
 					}
 				}
 
@@ -125,6 +126,7 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 
 	env := NewEnv(outer)
 	env.GlobalVars = outer.GlobalVars
+	env.GlobalAccess = false
 
 	for i := 0;i < len(funcP.Param);i++{
 		funcParam := funcP.Param[i]
@@ -163,7 +165,7 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 			if funcP.Type == "dynamic" || funcP.Type == typeResult{
 				return arr[1], nil
 			}else{
-				return nil, errors.New(TRunMakeError(9, funcP.Type, typeResult, "null", fileName, line, pos))
+				return nil, errors.New(TRunMakeError(9, funcP.Type, typeResult, "null", fileName, funcP.Line, funcP.Pos))
 			}
 		}
 	}
