@@ -116,7 +116,7 @@ func Astnize(allTokens []models.Token, fileName string, inside string, statement
 				p.unexpected(fileName)
 			case models.TokenIdent, models.TokenString, models.TokenNumber, models.TokenFloat, models.TokenBoolean, models.TokenParentheses, models.TokenUnOp, models.TokenCall, models.TokenObj, models.TokenArrayAccess:
 				pTemp := p
-				if tok.Type == models.TokenIdent || tok.Type == models.TokenArrayAccess{
+				if tok.Type == models.TokenIdent || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenObj{
 					tempAST := p.VariableAssignment(fileName)
 					if len(tempAST) > 0 && (!statementExpr || statementExpr && config.Config["mode"] == "dynamic"){
 						p.Ast = append(p.Ast, tempAST[0])

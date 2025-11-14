@@ -20,16 +20,16 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 		{models.TokenNewLine, regexp.MustCompile(`\r?\n`)},
 		{"QUOTE", regexp.MustCompile(`("|')`)},
 		{"BACK_SLASH", regexp.MustCompile(`\\`)},
-		{models.TokenFloat, regexp.MustCompile(`-?[0-9]+\.[0-9]+`)},
+		{models.TokenFloat, regexp.MustCompile(`([0-9]+\.[0-9]+)`)},
 		{models.TokenList, regexp.MustCompile(`(\{|\})`)},
-		{models.TokenNumber, regexp.MustCompile(`-?[0-9]+`)},
+		{models.TokenNumber, regexp.MustCompile(`([0-9]+)`)},
 		{models.TokenFuncStatement, regexp.MustCompile(`(\bfunction\b)`)},
-		{models.TokenNativeSugar, regexp.MustCompile(`(\bshow\b)`)},
+		{models.TokenNativeSugar, regexp.MustCompile(`(\bshow\b|\bglobal\b|\bthrow\b)`)},
 		{models.TokenBoolean, regexp.MustCompile(`(\btrue\b|\bfalse\b)`)},
 		{models.TokenControlFlow, regexp.MustCompile(`(\bbreak\b|\bcontinue\b|\breturn\b)`)},
 		{models.TokenIfStatement, regexp.MustCompile(`(\bif\b|\belse if\b|\belse\b)`)},
 		{models.TokenLoopStatement, regexp.MustCompile(`(\bwhile\b)`)},
-		{models.TokenType, regexp.MustCompile(`(\bmap|\barray)?<(int|str|bool|float)(:(.*))?>|\bdynamic\b`)},
+		{models.TokenType, regexp.MustCompile(`(\bmap|\barray)?<([\w]+)(:(([\w]+)|<|>))?>|\bdynamic\b`)},
 		{"PARENTHESE", regexp.MustCompile(`(\(|\))`)},
 		{models.TokenBinOp, regexp.MustCompile(`(==|!=|>=|<=|>|<|\|\||&&)`)},
 		{models.TokenNull, regexp.MustCompile(`\bnull\b`)},
@@ -337,14 +337,19 @@ func Tokenize(input string, fileName string, line int, pos int) []models.Token{
 			}
 
 			if !running{
-				if !((tok.Type == models.TokenCall || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenIdent) && i-1 >= 0 && n_tokens[i-1].Value == ".") && !(tok.Value == "." && i+1 < len(n_tokens) && (n_tokens[i+1].Type == models.TokenCall || n_tokens[i+1].Type == models.TokenArrayAccess || n_tokens[i+1].Type == models.TokenIdent)){
-					running = true
-					nn_tokens = append(nn_tokens, models.Token{models.TokenObj, runner["helper"], tempLine, tempPos})
-					i--
-					continue
+				if ((tok.Type == models.TokenCall || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenIdent) && i-1 >= 0 && n_tokens[i-1].Value == ".") || (tok.Value == "." && i+1 < len(n_tokens) && (n_tokens[i+1].Type == models.TokenCall || n_tokens[i+1].Type == models.TokenArrayAccess || n_tokens[i+1].Type == models.TokenIdent)){
+					runner["helper"] += tok.Value
 				}
 
-				runner["helper"] += tok.Value
+				if (!((tok.Type == models.TokenCall || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenIdent) && i-1 >= 0 && n_tokens[i-1].Value == ".") && !(tok.Value == "." && i+1 < len(n_tokens) && (n_tokens[i+1].Type == models.TokenCall || n_tokens[i+1].Type == models.TokenArrayAccess || n_tokens[i+1].Type == models.TokenIdent))) || i == len(n_tokens)-1{
+					running = true
+					nn_tokens = append(nn_tokens, models.Token{models.TokenObj, runner["helper"], tempLine, tempPos})
+
+					if (!((tok.Type == models.TokenCall || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenIdent) && i-1 >= 0 && n_tokens[i-1].Value == ".") && !(tok.Value == "." && i+1 < len(n_tokens) && (n_tokens[i+1].Type == models.TokenCall || n_tokens[i+1].Type == models.TokenArrayAccess || n_tokens[i+1].Type == models.TokenIdent))){
+						i--
+					}
+				}
+
 				continue
 			}
 		}

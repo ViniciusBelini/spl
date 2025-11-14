@@ -1,0 +1,55 @@
+// THIS DOES NOT WORK!!
+
+dynamic __WINDOWS__ := {
+    0: 0
+}
+
+function NewWindow(title <str>, width <int>, height <int>) <int>
+    global __WINDOWS__
+
+    dynamic window := __SYSTEM__gui("new_window", title, width, height)
+
+    <int> id := len(__WINDOWS__)
+    __WINDOWS__[id] = window
+
+    return id
+end
+
+function GetWindow(window <int>) dynamic
+    if !has(__WINDOWS__, window)
+        throw "[GuiError] Window not fount"
+    end
+
+    dynamic windowId := __WINDOWS__[window]
+
+    return windowId
+end
+
+function SetTitle(window <int>, title <str>) <bool>
+    global __WINDOWS__
+
+    dynamic windowId := GetWindow(window)
+    __SYSTEM__gui("set_title", windowId, title)
+
+    return true
+end
+
+function SetSize(window <int>, width <int>, height <int>) <bool>
+    global __WINDOWS__
+
+    dynamic windowId := GetWindow(window)
+    __SYSTEM__gui("set_title", windowId, width, height)
+
+    return true
+end
+
+function Show(window <int>) <bool>
+    global __WINDOWS__
+
+    dynamic windowId := GetWindow(window)
+    __SYSTEM__gui("show", windowId)
+
+    __WINDOWS__ = delete(__WINDOWS__, window)
+
+    return true
+end

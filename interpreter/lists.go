@@ -208,12 +208,20 @@ func SetArrValue(baseE []ast.Node, keyE []ast.Node, newValue interface{}, line i
 	}
 
 	idType, _ := GetTypeData(value)
-	idTypeKey, _ := GetTypeData(key)
+	idTypeKey, nameTypeKey := GetTypeData(key)
 
 	if idType == 6{
 		if _, ok := value.(map[any]any); ok{
 			// if _, exists := m[key]; exists{
-			value.(map[any]any)[key] = newValue
+			if vKey, ok := key.(string);ok{
+				value.(map[any]any)[vKey] = newValue
+			}else if vKey, ok := key.(int);ok{
+				value.(map[any]any)[vKey] = newValue
+			}else if vKey, ok := key.(float64);ok{
+				value.(map[any]any)[vKey] = newValue
+			}else{
+				return nil, errors.New(TRunMakeError(15, nameTypeKey, "null", "null", fileName, line, pos))
+			}
 			// }else{
 				// value.(map[any]any)[key] = newValue // double code LOL
 				// return nil, errors.New(TRunMakeError(17, ConvToString(key), "null", "null", fileName, line, pos))

@@ -45,12 +45,19 @@ func ImportFunc(node ast.ImportNode, outer *Env, fileName string) (*Env, error){
 	if err != nil{
 		return nil, err
 	}
-	importNode := parser.Astnize(allTokens, fileName, "null", false)
+	importNode := parser.Astnize(allTokens, path, "null", false)
 
 	newEnv := NewEnv(outer)
 	newEnv.GlobalAccess = true
-	Run(importNode, newEnv, path, false)
+	_, err = Run(importNode, newEnv, path, false)
+	if err != nil{
+		return nil, err
+	}
 
+	_, err = DefineGlobalVariable("__PATH__", path, models.TokenString, newEnv, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
 	_, err = DefineGlobalVariable(node.As, newEnv, models.TokenModule, outer, fileName, node.Line, node.Pos)
 	if err != nil{
 		return nil, err

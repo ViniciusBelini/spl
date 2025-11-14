@@ -151,6 +151,25 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 						fmt.Printf("%v", value)
 					}
 					env.Return = true
+				}else if node.(ast.NativeSugarNode).Name == "global"{
+					name := node.(ast.NativeSugarNode).Value.(string)
+
+					varP, err := GetVariable(name, env.Outer, fileName, node.(ast.NativeSugarNode).Line, node.(ast.NativeSugarNode).Pos, false)
+					if err != nil{
+						return nil, err
+					}
+					env.GlobalVars[name] = varP
+				}else if node.(ast.NativeSugarNode).Name == "throw"{
+					value, err := Run([]ast.Node{node.(ast.NativeSugarNode).Value}, env, fileName, false)
+					if err != nil{
+						return nil, err
+					}
+
+					if arr, ok := value.([2]any);ok{
+						value = arr[1]
+					}
+
+					return "throw", errors.New(PRunMakeError(value.(string), fileName, node.(ast.NativeSugarNode).Line, node.(ast.NativeSugarNode).Pos))
 				}
 			case ast.IdentNode:
 				varData, err := GetVariable(node.(ast.IdentNode).Name, env, fileName, node.(ast.IdentNode).Line, node.(ast.IdentNode).Pos, false)
@@ -281,10 +300,10 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					// env.Return = strings.ReplaceAll(tmpValue.(string)[1 : len(tmpValue.(string))-1], "\b\\n", "\n")
 					realText, err := strconv.Unquote(tmpValue.(string))
 					if err != nil{
-						return nil, err
+						env.Return = tmpValue.(string)[1 : len(tmpValue.(string))-1]
+					}else{
+						env.Return = realText
 					}
-
-					env.Return = realText
 				}else if tmpType == models.TokenNumber{
 					if v, err := strconv.Atoi(tmpValue.(string));err == nil{
 						env.Return = v
@@ -396,7 +415,7 @@ func GetTypeData(x interface{})(int, string){
 				}
 			}
 
-			if valueType[0:1] == "<" && valueType[len(valueType)-1:len(valueType)] == ">"{
+			if len(valueType) > 3 && valueType[0:1] == "<" && valueType[len(valueType)-1:len(valueType)] == ">"{
 				valueType = valueType[1:len(valueType)-1]
 			}
 

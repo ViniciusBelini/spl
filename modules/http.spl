@@ -1,0 +1,3 @@
+function Get(url <str>, header map<str:str>, method <str>, jsonData <str>) <str>
+    return __SYSTEM__http_get(url, header, method, jsonData)
+end

@@ -92,3 +92,9 @@ func MRunMakeError(id int, arg string, fileName string, line int, pos int) strin
 
 	return errorStr
 }
+
+func PRunMakeError(msg string, fileName string, line int, pos int) string{
+	errorStr := msg+" at "+fileName+":"+strconv.Itoa(line)+":"+strconv.Itoa(pos)
+
+	return errorStr
+}

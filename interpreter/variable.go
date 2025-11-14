@@ -68,17 +68,51 @@ func AssignVariable(node ast.AssignNode, outer *Env, fileName string) (interface
 		}
 
 		if node.NamePonter != nil{
-			// _, err := Run([]ast.Node{node.NamePonter}, outer, fileName, false)
-			// if err != nil{
-				// return nil, err
-			// }
+			switch node.NamePonter.(type){
+				case ast.ArrayAccess:
+					result, err := SetArrValue(node.NamePonter.(ast.ArrayAccess).Base, node.NamePonter.(ast.ArrayAccess).Key, value, node.NamePonter.(ast.ArrayAccess).Line, node.NamePonter.(ast.ArrayAccess).Pos, outer, fileName)
+					if err != nil{
+						return nil, err
+					}
 
-			result, err := SetArrValue(node.NamePonter.(ast.ArrayAccess).Base, node.NamePonter.(ast.ArrayAccess).Key, value, node.NamePonter.(ast.ArrayAccess).Line, node.NamePonter.(ast.ArrayAccess).Pos, outer, fileName)
-			if err != nil{
-				return nil, err
+					return result, nil
+				case ast.ObjCall:
+					// fmt.Printf("%v", node.NamePonter.(ast.ObjCall).Obj)
+					obj, err := Run([]ast.Node{node.NamePonter.(ast.ObjCall).Obj}, outer, fileName, false)
+					if err != nil{
+						return nil, err
+					}
+
+					if arr, ok := obj.([2]any);ok{
+						obj = arr[0]
+					}
+
+					typeObj, _ := GetTypeData(obj)
+					if typeObj == 4{
+						_, err := Run([]ast.Node{
+							ast.AssignNode{
+								Name: node.NamePonter.(ast.ObjCall).Consequent.(ast.IdentNode).Name,
+								NamePonter: nil,
+								Type: node.Type,
+								Value: node.Value,
+								Method: node.Method,
+								Line: node.Line,
+								Pos: node.Pos,
+							},
+						}, obj.(*Env), fileName, false)
+
+						if err != nil{
+							return nil, err
+						}
+						return value, nil
+					}/*else{
+						_, err = SetVariable(node.NamePonter.(ast.ObjCall).Obj.(ast.IdentNode).Name, value, obj, fileName, node.Line, node.Pos)
+						if err != nil{
+							return nil, err
+						}
+						return value, nil
+					}*/
 			}
-
-			return result, nil
 		}
 
 		_, err = SetVariable(node.Name, value, outer, fileName, node.Line, node.Pos)
@@ -95,11 +129,9 @@ func GetVariable(name string, outer *Env, fileName string, line int, pos int, de
 	if varVal, exists := outer.Variables[name];exists{
 		return varVal, nil
 	}else{
-		if !define{
-			if varVal, exists := outer.GlobalVars[name];exists{
-				return varVal, nil
-			}
-
+		if varVal, exists := outer.GlobalVars[name];exists{
+			return varVal, nil
+		}else if !define{
 			if outer.Outer != nil && outer.GlobalAccess{
 				varVal, err := GetVariable(name, outer.Outer, fileName, line, pos, define)
 				if err == nil{

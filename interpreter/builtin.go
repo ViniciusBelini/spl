@@ -23,6 +23,8 @@ func GetBuiltIn() map[string]func(node ast.FuncCall, outer *Env, fileName string
 		"len":  BUILT_IN_len,
 		"type_of": BUILT_IN_type_of,
 		"append": BUILT_IN_append,
+		"delete": BUILT_IN_delete,
+		"has": BUILT_IN_has,
 
 		"print": BUILT_IN_SYSTEM_print,
 		"__SYSTEM__io_input": BUILT_IN_SYSTEM_io_input,
@@ -36,6 +38,8 @@ func GetBuiltIn() map[string]func(node ast.FuncCall, outer *Env, fileName string
 
 		"__SYSTEM__json_encode": BUILT_IN_json_encode,
 		"__SYSTEM__json_decode": BUILT_IN_json_decode,
+
+		"__SYSTEM__gui": BUILT_IN_gui,
 	}
 
 	return BuiltInFuncs
@@ -161,6 +165,115 @@ func BUILT_IN_append(node ast.FuncCall, outer *Env, fileName string) (interface{
 	}
 
 	return list, nil
+}
+
+///////////// unset
+func BUILT_IN_delete(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
+	checkParams, err := BuiltInFuncsVerifyType("delete", []string{models.TokenDynamic, models.TokenDynamic}, node.Param, outer, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
+
+	list := checkParams[0]
+
+	if arr, ok := list.([2]any);ok{
+		list = arr[0]
+	}
+	id, typeParam := GetTypeData(list)
+
+	value := checkParams[1]
+
+	if arr, ok := value.([2]any);ok{
+		value = arr[0]
+	}
+
+	_, typeParamKey := GetTypeData(value)
+
+	if id == 6{
+		if vKey, ok := value.(string);ok{
+			delete(list.(map[any]any), vKey)
+		}else if vKey, ok := value.(int);ok{
+			delete(list.(map[any]any), vKey)
+		}else if vKey, ok := value.(float64);ok{
+			delete(list.(map[any]any), vKey)
+		}else{
+			return nil, errors.New(TRunMakeError(15, typeParamKey, "null", "null", fileName, node.Line, node.Pos))
+		}
+	}else if id == 7{
+		if vKey, ok := value.(int);ok{
+			list = append(list.([]any)[:vKey], list.([]any)[vKey+1:]...)
+		}else{
+			return nil, errors.New(TRunMakeError(15, typeParamKey, "null", "null", fileName, node.Line, node.Pos))
+		}
+		return list, nil
+	}else{
+		return nil, errors.New(TRunMakeError(11, typeParam, "delete()", "null", fileName, node.Line, node.Pos))
+	}
+
+	return list, nil
+}
+
+///////////// has
+func BUILT_IN_has(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
+	checkParams, err := BuiltInFuncsVerifyType("has", []string{models.TokenDynamic, models.TokenDynamic}, node.Param, outer, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
+
+	list := checkParams[0]
+
+	if arr, ok := list.([2]any);ok{
+		list = arr[0]
+	}
+	id, typeParam := GetTypeData(list)
+
+	value := checkParams[1]
+
+	if arr, ok := value.([2]any);ok{
+		value = arr[0]
+	}
+
+	_, typeParamKey := GetTypeData(value)
+
+	if id == 6{
+		if vKey, ok := value.(string);ok{
+			_, ok = list.(map[any]any)[vKey]
+			if ok{
+				return true, nil
+			}else{
+				return false, nil
+			}
+		}else if vKey, ok := value.(int);ok{
+			_, ok = list.(map[any]any)[vKey]
+			if ok{
+				return true, nil
+			}else{
+				return false, nil
+			}
+		}else if vKey, ok := value.(float64);ok{
+			_, ok = list.(map[any]any)[vKey]
+			if ok{
+				return true, nil
+			}else{
+				return false, nil
+			}
+		}else{
+			return nil, errors.New(TRunMakeError(15, typeParamKey, "null", "null", fileName, node.Line, node.Pos))
+		}
+	}else if id == 7{
+		if vKey, ok := value.(int);ok{
+			if vKey >= 0 && vKey < len(list.([]any)){
+				return true, nil
+			}
+			return false, nil
+		}else{
+			return nil, errors.New(TRunMakeError(15, typeParamKey, "null", "null", fileName, node.Line, node.Pos))
+		}
+	}else{
+		return nil, errors.New(TRunMakeError(11, typeParam, "has()", "null", fileName, node.Line, node.Pos))
+	}
+
+	return false, nil
 }
 
 ///////////// system io input
@@ -376,4 +489,23 @@ func BUILT_IN_json_decode(node ast.FuncCall, outer *Env, fileName string) (inter
 		return nil, err
 	}
 	return cnvtCase, nil
+}
+
+func BUILT_IN_gui(node ast.FuncCall, outer *Env, fileName string) (interface{}, error){
+	var lParamList []string
+	for i := 0;i < len(node.Param);i++{
+		lParamList = append(lParamList, models.TokenDynamic)
+	}
+
+	checkParams, err := BuiltInFuncsVerifyType("__SYSTEM__gui", lParamList, node.Param, outer, fileName, node.Line, node.Pos)
+	if err != nil{
+		return nil, err
+	}
+
+	result, err := modules.GUI_run(checkParams)
+	if err != nil{
+		return nil, err
+	}
+
+	return result, nil
 }

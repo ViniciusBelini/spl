@@ -1,3 +1,5 @@
+// Strict mode
+
 import io
 import math
 

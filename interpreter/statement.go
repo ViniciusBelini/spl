@@ -17,6 +17,7 @@ func IfStatement(node ast.IfStatement, outer *Env, fileName string) (interface{}
 	if config.Config["mode"] == "strict"{
 		env = NewEnv(outer)
 		env.GlobalAccess = true
+		env.GlobalVars = outer.GlobalVars
 	}
 
 	value, err := Run([]ast.Node{node.Test}, env, fileName, false)
@@ -50,6 +51,7 @@ func LoopStatement(node ast.LoopStatement, outer *Env, fileName string) (interfa
 		if config.Config["mode"] == "strict"{
 			env = NewEnv(outer)
 			env.GlobalAccess = true
+			env.GlobalVars = outer.GlobalVars
 		}
 
 		value, err := Run([]ast.Node{node.Test}, env, fileName, false)
@@ -66,12 +68,14 @@ func LoopStatement(node ast.LoopStatement, outer *Env, fileName string) (interfa
 				}
 
 				if arr, ok := result.([2]any);ok{
-					if arr[0].(string) == "continue"{
-						continue
-					}else if arr[0].(string) == "break"{
-						break
-					}else if arr[0].(string) == "return"{
-						return arr, nil
+					if v, ok := arr[0].(string);ok{
+						if v == "continue"{
+							continue
+						}else if v == "break"{
+							break
+						}else if v == "return"{
+							return arr, nil
+						}
 					}
 				}
 
@@ -152,12 +156,20 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 		}
 	}
 
+	if env.Outer != nil{
+		varPath, err := GetVariable("__PATH__", env.Outer, fileName, line, pos, false)
+		if err == nil{
+			if varPath.Type == models.TokenString{
+				fileName = varPath.Value.(string)
+			}
+		}
+	}
+
 	returnFunc, err := Run(funcP.Consequent, env, fileName, false)
 
 	if err != nil{
 		return nil, err
 	}
-
 
 	if arr, ok := returnFunc.([2]any);ok{
 		if arr[0].(string) == "return"{

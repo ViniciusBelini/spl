@@ -33,7 +33,11 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 
 	var varAst []ast.AssignNode
 
-	if tok.Type == models.TokenType{
+	if (tok.Type == models.TokenType || tok.Type == models.TokenIdent) && p.canNext() && p.peekNext().Type != models.TokenAssign{
+		if !p.canNext() || p.peekNext().Type != models.TokenIdent{
+			return varAst
+		}
+
 		varData.Type = tok.Value
 		if tok.Value == "dynamic"{
 			varData.Type = "<dynamic>"
@@ -47,7 +51,7 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 	}
 
 	var tmpIdent models.Token
-	if tok.Type == models.TokenIdent || tok.Type == models.TokenArrayAccess{
+	if tok.Type == models.TokenIdent || tok.Type == models.TokenArrayAccess || tok.Type == models.TokenObj{
 		varData.Name = tok.Value
 		tmpIdent = tok
 
@@ -66,7 +70,7 @@ func (p *Parser) VariableAssignment(fileName string) []ast.AssignNode{
 		return varAst
 	}
 
-	if tmpIdent.Type == models.TokenArrayAccess{
+	if tmpIdent.Type == models.TokenArrayAccess || tmpIdent.Type == models.TokenObj{
 		tmpVname := Astnize([]models.Token{tmpIdent}, fileName, varData.Name, true)
 		varData.NameReal = tmpVname[0]
 	}

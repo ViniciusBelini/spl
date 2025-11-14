@@ -1,3 +1,99 @@
-import io
+// Modo strict - qualquer erro é fatal
 
-io.Print("Year: "..int(2025))
+import io
+import math
+
+print("Calculadora SPL v1.0 com precedência (+ - * / %)\n- ajuda\n- sair")
+
+while true
+    <str> input := io.Input("> ")
+
+    if input == "ajuda"
+        print("Digite equações para obter o resultado. Ex.: 2 + 2 * 2\nDigite `ajuda` para exibir esta mensagem.\nDigite `sair` para abandonar este programa.")
+        continue
+    else if input == "sair"
+        break
+    end
+
+    <int> resultado := calcular(input)
+
+    print("Resultado: "..str(resultado))
+end
+
+function calcular(input <str>) <int>
+    // Aqui é uma limitação pois ao usar `delete`, retorna um array sem valor, e o tipo vira array<>, daí recusa obter esse valor visto que o tipo da variável é array<int> ou array<str>
+    array<int> stackN := {0}
+    array<str> stackO := {"+"}
+
+    <int> i := 0
+    <str> numero := ""
+    while i < len(input)
+        <str> n := input[i]
+        i += 1
+
+        if math.IsInt(n)
+            numero = numero .. n
+
+            if i == len(input)
+                if !math.IsInt(numero)
+                    throw "Ocorreu um erro inesperado ao receber input '"..str(numero).."'"
+                end
+
+                stackN = append(stackN, int(numero))
+                numero = ""
+            end
+
+            continue
+        else if n == "+" || n == "-" || n == "*" || n == "/" || n == "%"
+            stackO = append(stackO, n)
+
+            if !math.IsInt(numero)
+                throw "Ocorreu um erro inesperado"
+            end
+
+            stackN = append(stackN, int(numero))
+            numero = ""
+
+            continue
+        else if n == " " || n == "\n"
+            continue
+        end
+
+        print("Digite uma equação válida!")
+
+        return 0
+    end
+
+    if len(stackN)-1 != len(stackO)
+        print("Equação inválida!")
+        return 0
+    end
+
+    i = 0
+    while len(stackN) > 1
+        <int> n1 := stackN[i]
+        <str> o := stackO[i]
+        stackN = delete(stackN, i)
+        if len(stackO) > 1
+            stackO = delete(stackO, i)
+        end
+
+        <int> n2 := stackN[i]
+
+        if o == "+"
+            stackN[i] = n1 + n2
+        else if o == "-"
+            stackN[i] = n1 - n2
+        else if o == "*"
+            stackN[i] = n1 * n2
+        else if o == "/"
+            stackN[i] = int(n1 / n2)
+        else if o == "%"
+            stackN[i] = n1 % n2
+        end
+    end
+
+    <int> resultado := stackN[0]
+
+    return resultado
+end

@@ -24,6 +24,24 @@ func (p *Parser) NativeSugar(fileName string){
 			}
 			p = pTemp
 			p.unexpected(fileName)
+		case "global":
+			pTemp := p
+			tempAST := p.GlobalSugar(fileName)
+			if len(tempAST) > 0{
+				p.Ast = append(p.Ast, tempAST[0])
+				return
+			}
+			p = pTemp
+			p.unexpected(fileName)
+		case "throw":
+			pTemp := p
+			tempAST := p.ThrowSugar(fileName)
+			if len(tempAST) > 0{
+				p.Ast = append(p.Ast, tempAST[0])
+				return
+			}
+			p = pTemp
+			p.unexpected(fileName)
 		default:
 			p.unexpected(fileName)
 	}
@@ -67,7 +85,80 @@ func (p *Parser) ShowSugar(fileName string) []ast.NativeSugarNode{
 
 	astSugar = append(astSugar, ast.NativeSugarNode{
 		Name: "show",
-		Value: getFirst(Astnize(sugarTokens, fileName, "NativeShugar", true), true),
+		Value: getFirst(Astnize(sugarTokens, fileName, "NativeSugar", true), true),
+		Line: tokInit.Line,
+		Pos: tokInit.Pos,
+	})
+
+	p.next()
+	return astSugar
+}
+
+func (p *Parser) GlobalSugar(fileName string) []ast.NativeSugarNode{
+	var astSugar []ast.NativeSugarNode
+
+	tok := p.peek()
+	tokInit := tok
+
+	if tok.Value != "global" || !p.canNext(){
+		return astSugar
+	}
+
+	p.next()
+	tok = p.peek()
+
+	if tok.Type != models.TokenIdent{
+		return astSugar
+	}
+
+
+	astSugar = append(astSugar, ast.NativeSugarNode{
+		Name: "global",
+		Value: tok.Value,
+		Line: tokInit.Line,
+		Pos: tokInit.Pos,
+	})
+
+	p.next()
+	return astSugar
+}
+
+func (p *Parser) ThrowSugar(fileName string) []ast.NativeSugarNode{
+	var astSugar []ast.NativeSugarNode
+
+	tok := p.peek()
+	tokInit := tok
+
+	if tok.Value != "throw"{
+		return astSugar
+	}
+
+	p.next()
+	var sugarTokens []models.Token
+	for !p.eof(){
+		tok = p.peek()
+
+		if tok.Type == models.TokenNewLine{
+			break
+		}
+
+		sugarTokens = append(sugarTokens, tok)
+		p.next()
+	}
+
+	getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
+		if len(nodes) > 0{
+			if returnFr{
+				return nodes[0]
+			}
+			return nodes
+		}
+		return nil
+	}
+
+	astSugar = append(astSugar, ast.NativeSugarNode{
+		Name: "throw",
+		Value: getFirst(Astnize(sugarTokens, fileName, "NativeSugar", true), true),
 		Line: tokInit.Line,
 		Pos: tokInit.Pos,
 	})
