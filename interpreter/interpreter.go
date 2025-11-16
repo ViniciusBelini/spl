@@ -26,10 +26,11 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 		switch node.(type){
 			case ast.FuncStatement:
 				funcStat := node.(ast.FuncStatement)
-				err := AssignFunc(funcStat.Name, &funcStat, env, fileName, funcStat.Line, funcStat.Pos)
+				funcP, err := AssignFunc(funcStat.Name, &funcStat, env, fileName, funcStat.Line, funcStat.Pos)
 				if err != nil{
 					return nil, err
 				}
+				env.Return = [2]any{funcP, models.TokenFunction+"("+funcStat.Name+")"}
 		}
 	}
 
@@ -95,7 +96,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					}
 					env.Return = result
 				}else{
-					result, err := CallFunc(node.(ast.FuncCall).Name, node.(ast.FuncCall).Param, env, fileName, node.(ast.FuncCall).Line, node.(ast.FuncCall).Pos)
+					result, err := CallFunc(node.(ast.FuncCall).Name, nil, node.(ast.FuncCall).Param, env, fileName, node.(ast.FuncCall).Line, node.(ast.FuncCall).Pos)
 					if err != nil{
 						return nil, err
 					}
@@ -180,6 +181,8 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 				id, typeData := GetTypeData(varData.Value)
 				if typeData == models.TokenModule{
 					env.Return = [2]any{varData.Value, models.TokenModule+"("+node.(ast.IdentNode).Name+")"}
+				}else if typeData == models.TokenFunction{
+					env.Return = [2]any{varData.Value, models.TokenFunction+"("+node.(ast.IdentNode).Name+")"}
 				}else if id == 6 || id == 7{
 					splData, err := convertSplData(varData.Value, "")
 					if err != nil{
@@ -335,7 +338,6 @@ func NewEnv(outer *Env) *Env{
 		Return: nil,
 		Variables: make(map[string]*Vars),
 		GlobalVars: make(map[string]*Vars),
-		Functions: make(map[string]*Func),
 		GlobalAccess: false,
 		Outer:     outer,
 	}
@@ -391,7 +393,7 @@ func GetTypeData(x interface{})(int, string){
 				}
 			}
 
-			if keyType != "dynamic"{
+			if keyType != "dynamic" && len(keyType) > 3{
 				keyType = keyType[1: len(keyType)-1]
 			}
 			if valueType == models.TokenString || valueType == models.TokenNumber || valueType == models.TokenFloat || valueType == models.TokenBoolean{
@@ -420,6 +422,8 @@ func GetTypeData(x interface{})(int, string){
 			}
 
 			return 7, "array<"+valueType+">"
+		case *Func:
+			return 8, models.TokenFunction
 		default:
 			// fmt.Println(reflect.TypeOf(x))
 			return -1, models.TokenUnknown

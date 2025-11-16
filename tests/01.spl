@@ -1,99 +1,55 @@
-// Modo strict - qualquer erro é fatal
-
-import io
+import gui
 import math
 
-print("Calculadora SPL v1.0 com precedência (+ - * / %)\n- ajuda\n- sair")
+<int> window := gui.NewWindow("Counter - SPL", 200, 0)
 
-while true
-    <str> input := io.Input("> ")
+function updateCounter(counter <int>, label <int>) <bool>
+    gui.SetText(label, "Counter: " .. str(counter))
 
-    if input == "ajuda"
-        print("Digite equações para obter o resultado. Ex.: 2 + 2 * 2\nDigite `ajuda` para exibir esta mensagem.\nDigite `sair` para abandonar este programa.")
-        continue
-    else if input == "sair"
-        break
-    end
-
-    <int> resultado := calcular(input)
-
-    print("Resultado: "..str(resultado))
+    return true
 end
 
-function calcular(input <str>) <int>
-    // Aqui é uma limitação pois ao usar `delete`, retorna um array sem valor, e o tipo vira array<>, daí recusa obter esse valor visto que o tipo da variável é array<int> ou array<str>
-    array<int> stackN := {0}
-    array<str> stackO := {"+"}
+function main() <bool>
+    global window
 
-    <int> i := 0
-    <str> numero := ""
-    while i < len(input)
-        <str> n := input[i]
-        i += 1
+    <int> container := gui.NewContainer("vertical")
+    <int> counter := 0
 
-        if math.IsInt(n)
-            numero = numero .. n
+    <int> label := gui.NewLabel("Counter: 0")
+    gui.Add(container, label)
 
-            if i == len(input)
-                if !math.IsInt(numero)
-                    throw "Ocorreu um erro inesperado ao receber input '"..str(numero).."'"
-                end
-
-                stackN = append(stackN, int(numero))
-                numero = ""
+    dynamic increment := (
+        function()
+            if counter < 10
+                counter += 1
+                updateCounter(counter, label)
+            else
+                gui.SetText(label, "Maximum reached!")
             end
+        end
+    )
 
-            continue
-        else if n == "+" || n == "-" || n == "*" || n == "/" || n == "%"
-            stackO = append(stackO, n)
-
-            if !math.IsInt(numero)
-                throw "Ocorreu um erro inesperado"
+    dynamic decrement := (
+        function()
+            if counter > 0
+                counter -= 1
+                updateCounter(counter, label)
+            else
+                gui.SetText(label, "Minimum reached!")
             end
-
-            stackN = append(stackN, int(numero))
-            numero = ""
-
-            continue
-        else if n == " " || n == "\n"
-            continue
         end
+    )
 
-        print("Digite uma equação válida!")
+    <int> buttonInc := gui.NewButton("+", increment)
+    <int> buttonDec := gui.NewButton("-", decrement)
 
-        return 0
-    end
+    gui.Add(container, buttonInc)
+    gui.Add(container, buttonDec)
 
-    if len(stackN)-1 != len(stackO)
-        print("Equação inválida!")
-        return 0
-    end
+    gui.SetContent(window, container)
+    gui.Show(window)
 
-    i = 0
-    while len(stackN) > 1
-        <int> n1 := stackN[i]
-        <str> o := stackO[i]
-        stackN = delete(stackN, i)
-        if len(stackO) > 1
-            stackO = delete(stackO, i)
-        end
-
-        <int> n2 := stackN[i]
-
-        if o == "+"
-            stackN[i] = n1 + n2
-        else if o == "-"
-            stackN[i] = n1 - n2
-        else if o == "*"
-            stackN[i] = n1 * n2
-        else if o == "/"
-            stackN[i] = int(n1 / n2)
-        else if o == "%"
-            stackN[i] = n1 % n2
-        end
-    end
-
-    <int> resultado := stackN[0]
-
-    return resultado
+    return true
 end
+
+main()

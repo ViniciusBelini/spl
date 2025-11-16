@@ -1,55 +1,164 @@
-// THIS DOES NOT WORK!!
-
-dynamic __WINDOWS__ := {
+dynamic __GUI_WIDGET__ := {
     0: 0
 }
 
+// NEW WINDOW
 function NewWindow(title <str>, width <int>, height <int>) <int>
-    global __WINDOWS__
+    global __GUI_WIDGET__
 
     dynamic window := __SYSTEM__gui("new_window", title, width, height)
 
-    <int> id := len(__WINDOWS__)
-    __WINDOWS__[id] = window
+    <int> id := len(__GUI_WIDGET__)
+    __GUI_WIDGET__[id] = window
 
     return id
 end
 
-function GetWindow(window <int>) dynamic
-    if !has(__WINDOWS__, window)
-        throw "[GuiError] Window not fount"
-    end
-
-    dynamic windowId := __WINDOWS__[window]
-
-    return windowId
-end
-
+// SET WINDOW TITLE
 function SetTitle(window <int>, title <str>) <bool>
-    global __WINDOWS__
+    global __GUI_WIDGET__
 
-    dynamic windowId := GetWindow(window)
+    dynamic windowId := GetWidget(window)
     __SYSTEM__gui("set_title", windowId, title)
 
     return true
 end
 
+// SET WINDOW SIZE
 function SetSize(window <int>, width <int>, height <int>) <bool>
-    global __WINDOWS__
+    global __GUI_WIDGET__
 
-    dynamic windowId := GetWindow(window)
-    __SYSTEM__gui("set_title", windowId, width, height)
+    dynamic windowId := GetWidget(window)
+    __SYSTEM__gui("set_size", windowId, width, height)
 
     return true
 end
 
+// SHOW WINDOW
 function Show(window <int>) <bool>
-    global __WINDOWS__
+    global __GUI_WIDGET__
 
-    dynamic windowId := GetWindow(window)
+    dynamic windowId := GetWidget(window)
     __SYSTEM__gui("show", windowId)
 
-    __WINDOWS__ = delete(__WINDOWS__, window)
+    __GUI_WIDGET__ = delete(__GUI_WIDGET__, window)
 
     return true
+end
+
+// NEW CONTAINER OF TYPE
+function NewContainer(type <str>) <int>
+    if type != "vertical" && type != "horizontal"
+        throw "[GuiError] Container type must be 'vertical' or 'horizontal'"
+    end
+
+    global __GUI_WIDGET__
+
+    dynamic container := __SYSTEM__gui("new_container", type)
+
+    <int> id := len(__GUI_WIDGET__)
+    __GUI_WIDGET__[id] = container
+
+    return id
+end
+
+// SET CONTAINER CONTENT TO WINDOW
+function SetContent(window <int>, container <int>) <bool>
+    global __GUI_WIDGET__
+
+    dynamic windowId := GetWidget(window)
+    dynamic containerId := GetWidget(container)
+
+    __SYSTEM__gui("set_content", windowId, containerId)
+
+    return true
+end
+
+// ADD WIDGET TO CONTAINER
+function Add(container <int>, widget <int>) <bool>
+    global __GUI_WIDGET__
+
+    dynamic containerId := GetWidget(container)
+    dynamic widgetId := GetWidget(widget)
+
+    __SYSTEM__gui("container_add", containerId, widgetId)
+
+    return true
+end
+
+// GET WIDGET
+function GetWidget(widget <int>) dynamic
+    global __GUI_WIDGET__
+
+    if !has(__GUI_WIDGET__, widget)
+        throw "[GuiError] Container not fount"
+    end
+
+    // print("\n\n----------------------------")
+    // print(__GUI_WIDGET__)
+    // print(widget)
+    // print("----------------------------\n\n")
+    dynamic widgetId := __GUI_WIDGET__[widget]
+
+    return widgetId
+end
+
+// get text
+function GetText(widget <int>) <str>
+    global __GUI_WIDGET__
+
+    dynamic widgetId := GetWidget(widget)
+    dynamic text := __SYSTEM__gui("widget", "get_text", widgetId)
+
+    return text
+end
+
+// set text
+function SetText(widget <int>, text <str>) <bool>
+    global __GUI_WIDGET__
+
+    dynamic widgetId := GetWidget(widget)
+    __SYSTEM__gui("widget", "set_text", widgetId, text)
+
+    return true
+end
+
+// button
+function NewButton(label <str>, func dynamic) <int>
+    if type_of(func) != "function"
+        throw "[GuiError] 'NewButton' require function statement type param"
+    end
+
+    global __GUI_WIDGET__
+
+    dynamic button := __SYSTEM__gui("widget", "new_button", label, func, 1, 1)
+
+    <int> id := len(__GUI_WIDGET__)
+    __GUI_WIDGET__[id] = button
+
+    return id
+end
+
+// input
+function NewInput(label <str>) <int>
+    global __GUI_WIDGET__
+
+    dynamic input := __SYSTEM__gui("widget", "new_input", label)
+
+    <int> id := len(__GUI_WIDGET__)
+    __GUI_WIDGET__[id] = input
+
+    return id
+end
+
+// label
+function NewLabel(label <str>) <int>
+    global __GUI_WIDGET__
+
+    dynamic widget := __SYSTEM__gui("widget", "new_label", label)
+
+    <int> id := len(__GUI_WIDGET__)
+    __GUI_WIDGET__[id] = widget
+
+    return id
 end

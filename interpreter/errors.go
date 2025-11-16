@@ -49,6 +49,8 @@ func TRunMakeError(id int, x string, y string, z string, fileName string, line i
 			errorStr += "[TypeError] '"+x+"' object is not subscriptable at " + fileName + ":" + strconv.Itoa(line) + ":" + strconv.Itoa(pos) + " [T" + strconv.Itoa(1000+id) + "]"
 		case 19:
 			errorStr += "[ValueError] Array index out of range at " + fileName + ":" + strconv.Itoa(line) + ":" + strconv.Itoa(pos) + " [T" + strconv.Itoa(1000+id) + "]"
+		case 20:
+			errorStr += "[TypeError] '"+x+"' object is not callable at " + fileName + ":" + strconv.Itoa(line) + ":" + strconv.Itoa(pos) + " [T" + strconv.Itoa(1000+id) + "]"
 	}
 
 	return errorStr

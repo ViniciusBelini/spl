@@ -73,10 +73,21 @@ func readFileTokenize(fileName string) []models.Token{
 // run the program
 func run(allTokens []models.Token, fileName string) bool{
 	ast := parser.Astnize(allTokens, fileName, "null", false)
-	_, err := interpreter.Run(ast, nil, fileName, true)
+
+	newEnv := interpreter.NewEnv(nil)
+	newEnv.GlobalAccess = true
+
+	_, err := interpreter.DefineGlobalVariable("__PATH__", fileName, models.TokenString, newEnv, fileName, 1, 1)
+	if err != nil{
+		fmt.Println(err)
+		return false
+	}
+
+	_, err = interpreter.Run(ast, nil, fileName, true)
 
 	if err != nil{
 		fmt.Println(err)
+		return false
 	}
 
 	// fmt.Println(msg)

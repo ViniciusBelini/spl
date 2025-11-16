@@ -502,7 +502,7 @@ func BUILT_IN_gui(node ast.FuncCall, outer *Env, fileName string) (interface{}, 
 		return nil, err
 	}
 
-	result, err := modules.GUI_run(checkParams)
+	result, err := module_GUI_run(checkParams)
 	if err != nil{
 		return nil, err
 	}

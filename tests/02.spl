@@ -1,0 +1,66 @@
+// Does not work!
+
+import gui
+import math
+
+<int> window := gui.NewWindow("Mini Guess Game v2 - SPL", 300, 0)
+
+function newGame(score <int>) <bool>
+    global window
+
+    <int> secret := math.Rand(1, 3)
+
+    <int> container := gui.NewContainer("vertical")
+    <int> label := gui.NewLabel("Guess the secret number (1-3)")
+    gui.Add(container, label)
+
+    <int> scoreLabel := gui.NewLabel("Score: " .. str(score))
+    gui.Add(container, scoreLabel)
+
+    dynamic makeButtonAction := (
+        function(num <int>)
+            global secret
+            global gui
+            global label
+            global score
+            global scoreLabel
+            global window
+            global math
+            return (
+                function()
+                    global math
+                    global secret
+                    global gui
+                    global label
+                    global score
+                    global scoreLabel
+                    global window
+
+                    if num == secret
+                        score += 1
+                        gui.SetText(label, "🎉 Correct! Number was " .. str(secret))
+                        gui.SetText(scoreLabel, "Score: " .. str(score))
+                        newGame(score)
+                    else
+                        gui.SetText(label, "❌ Wrong! Try again.")
+                    end
+                end
+            )
+        end
+    )
+
+    <int> button1 := gui.NewButton("1", makeButtonAction(1))
+    <int> button2 := gui.NewButton("2", makeButtonAction(2))
+    <int> button3 := gui.NewButton("3", makeButtonAction(3))
+
+    gui.Add(container, button1)
+    gui.Add(container, button2)
+    gui.Add(container, button3)
+
+    gui.SetContent(window, container)
+
+    return true
+end
+
+newGame(0)
+gui.Show(window)

@@ -12,6 +12,7 @@ const(
 	TokenBoolean		= "<bool>"
 	TokenDynamic		= "dynamic"
 	TokenModule		= "module"
+	TokenFunction		= "function"
 	TokenControlFlow	= "CONTROL_FLOW"
 	TokenIfStatement	= "IF_STATEMENT"
 	TokenLoopStatement	= "LOOP_STATEMENT"

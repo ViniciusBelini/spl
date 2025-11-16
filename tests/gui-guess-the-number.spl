@@ -1,0 +1,73 @@
+import math
+import gui
+
+<int> window := gui.NewWindow("Gues the Number - SPL", 300, 0)
+
+function newGame() <bool>
+    global window
+
+    <int> number := math.Rand(0, 100)
+
+    <int> container := gui.NewContainer("vertical")
+    <int> label := gui.NewLabel("Guess a number between 0 and 100")
+    <int> input := gui.NewInput("Your guess")
+
+    dynamic buttonAction := (
+        function()
+            <str> strGuess := gui.GetText(input)
+            gui.SetText(input, "")
+
+            if len(strGuess) < 1 || !math.IsInt(strGuess)
+                gui.SetText(label, "Type a valid number between 0 to 100!")
+                return
+            end
+
+            <int> guess := int(strGuess)
+
+            if guess > number
+                gui.SetText(label, "Too hight! Try again.")
+            else if guess < number
+                gui.SetText(label, "Too low! Try again.")
+            else if guess == number
+                wonGame()
+            end
+
+            return
+        end
+    )
+
+    <int> button := gui.NewButton("SEND", buttonAction)
+
+    gui.Add(container, label)
+    gui.Add(container, input)
+    gui.Add(container, button)
+
+    gui.SetContent(window, container)
+
+    return true
+end
+
+function wonGame() <bool>
+    global window
+
+    <int> container := gui.NewContainer("vertical")
+    <int> label := gui.NewLabel("Congratulations! You won the game.")
+
+    dynamic buttonAction := (
+        function()
+            newGame()
+        end
+    )
+
+    <int> button := gui.NewButton("NEW GAME", buttonAction)
+
+    gui.Add(container, label)
+    gui.Add(container, button)
+
+    gui.SetContent(window, container)
+
+    return true
+end
+
+newGame()
+gui.Show(window)

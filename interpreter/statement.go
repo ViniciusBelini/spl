@@ -92,23 +92,30 @@ func LoopStatement(node ast.LoopStatement, outer *Env, fileName string) (interfa
 }
 
 // Func statement
-func AssignFunc(name string, point *ast.FuncStatement, outer *Env, fileName string, line int, pos int) error{
+func AssignFunc(name string, point *ast.FuncStatement, outer *Env, fileName string, line int, pos int) (*Func, error){
 	_, err := GetFunc(name, outer, fileName, line, pos)
 	if err == nil{
-		return errors.New(NRunMakeError(2, name, fileName, line, pos))
+		return nil, errors.New(NRunMakeError(2, name, fileName, line, pos))
 	}
 
-	outer.Functions[name] = &Func{
+	funcP := &Func{
 		Outer: outer,
 		Point: point,
+		FileName: fileName,
 	}
 
-	return nil
+	if name != "__NULL_NAME__"{
+		_, err = DefineGlobalVariable(name, funcP, models.TokenFunction, outer, fileName, line, pos)
+		if err != nil{
+			return nil, err
+		}
+	}
+
+	return funcP, nil
 }
 func GetFunc(name string, outer *Env, fileName string, line int, pos int) (*ast.FuncStatement, error){
-	if varVal, exists := outer.Functions[name];exists{
-		return varVal.Point, nil
-	}else{
+	varVal, err := GetVariable(name, outer, fileName, line, pos, false)
+	if err != nil{
 		if outer.Outer != nil{
 			varVal, err := GetFunc(name, outer.Outer, fileName, line, pos)
 			if err == nil{
@@ -117,11 +124,23 @@ func GetFunc(name string, outer *Env, fileName string, line int, pos int) (*ast.
 		}
 		return nil, errors.New(NRunMakeError(1, name, fileName, line, pos))
 	}
+
+	if f, ok := varVal.Value.(*Func);ok{
+		return f.Point, nil
+	}
+	return nil, errors.New(TRunMakeError(20, name, "null", "null", fileName, line, pos))
 }
-func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line int, pos int) (interface{}, error){
-	funcP, err := GetFunc(name, outer, fileName, line, pos)
-	if err != nil{
-		return nil, err
+func CallFunc(name string, nameP *Func, params []ast.Node, outer *Env, fileName string, line int, pos int) (interface{}, error){
+	var funcP *ast.FuncStatement
+
+	if nameP == nil{
+		funcPtmp, err := GetFunc(name, outer, fileName, line, pos)
+		if err != nil{
+			return nil, err
+		}
+		funcP = funcPtmp
+	}else{
+		funcP = nameP.Point
 	}
 
 	if len(params) < len(funcP.Param) || len(params) > len(funcP.Param){
@@ -131,6 +150,9 @@ func CallFunc(name string, params []ast.Node, outer *Env, fileName string, line 
 	env := NewEnv(outer)
 	env.GlobalVars = outer.GlobalVars
 	env.GlobalAccess = false
+	if nameP != nil{
+		env.GlobalAccess = true
+	}
 
 	for i := 0;i < len(funcP.Param);i++{
 		funcParam := funcP.Param[i]

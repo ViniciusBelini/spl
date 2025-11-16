@@ -36,25 +36,31 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 
 	p.next();tok = p.peek()
 
-	if tok.Type != models.TokenCall{
-		p.generic("Function declaration missing name and parameter list", "S1014", fileName) // Error
+	funcName := "__NULL_NAME__"
+	var newParams []ast.ParamNode
+	params := ""
+	if tok.Type == models.TokenCall{
+		openParen := strings.Index(tok.Value, "(")
+		closeParen := strings.LastIndex(tok.Value, ")")
+
+		if openParen == -1 || closeParen == -1 || closeParen <= openParen{
+			p.unexpected(fileName) // Error
+			return FuncAST
+		}
+
+		funcName = tok.Value[:openParen]
+		params = tok.Value[openParen : closeParen+1]
+		params = params[1 : len(params)-1]
+	}else if tok.Type == models.TokenParentheses{
+		if len(tok.Value) > 2{
+			params = tok.Value[1:len(tok.Value)-1]
+		}
+	}else{
+		p.generic("Function declaration missing parameter list", "S1014", fileName) // Error
 		return FuncAST
 	}
-
-	openParen := strings.Index(tok.Value, "(")
-	closeParen := strings.LastIndex(tok.Value, ")")
-
-	if openParen == -1 || closeParen == -1 || closeParen <= openParen{
-		p.unexpected(fileName) // Error
-		return FuncAST
-	}
-
-	funcName := tok.Value[:openParen]
-	params := tok.Value[openParen : closeParen+1]
-	params = params[1 : len(params)-1]
 
 	funcParams := lexer.Tokenize(params, fileName, funLinePos["line"], funLinePos["pos"])
-	var newParams []ast.ParamNode
 	for i := 0;i < len(funcParams);i++{
 		paramToken := funcParams[i]
 
