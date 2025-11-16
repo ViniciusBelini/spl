@@ -1,0 +1,85 @@
+function Slice(string <str>, start <int>, fim <int>) <str>
+    <str> newString := ""
+
+    if start >= fim
+        throw "[StringsError] Start must be lower then end"
+    end
+
+    while start < fim
+        newString = newString .. string[start]
+
+        start += 1
+    end
+
+    return newString
+end
+
+function Split(string <str>, spliter <str>) array<str>
+    <int> i := 0
+
+    <str> piece := ""
+    array<str> list := {""}
+    while i < len(string)
+        <str> t := string[i]
+
+        i += 1
+
+        if t == spliter || i == len(string)
+            list = append(list, piece)
+            piece = ""
+        else
+            piece = piece .. t
+        end
+    end
+
+    if len(list) > 1
+        list = delete(list, 0)
+    end
+
+    return list
+end
+
+function Replace(string <str>, from <str>, to <str>) <str>
+    if from == to
+        throw "[StringsError] Cannot replace to an iqual subject"
+    end
+
+    <str> res := ""
+    <int> i := 0
+    <int> n := len(string)
+    <int> ln := len(from)
+
+    while i < n
+        if i + ln - 1 < n
+            if Slice(string, i, i + ln) == from
+                res = res + to
+                i = i + ln
+            else
+                res = res + string[i]
+                i = i + 1
+            end
+        else
+            res = res + string[i]
+            i = i + 1
+        end
+    end
+
+    return res
+end
+
+function Starts(string <str>, starts <str>) <bool>
+    <int> i := 0
+
+    while i < len(starts)
+        <str> t := string[i]
+        <str> tS := starts[i]
+
+        if t != tS
+            return false
+        end
+
+        i += 1
+    end
+
+    return true
+end

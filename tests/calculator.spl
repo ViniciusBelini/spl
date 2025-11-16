@@ -1,0 +1,180 @@
+import math
+import strings
+import gui
+
+// MAIN WINDOW
+<int> window := gui.NewWindow("Calculator SPL", 0, 0)
+
+// MAIN CONTAINER
+<int> container := gui.NewContainer("vertical")
+
+// TOP TEXT
+<int> label := gui.NewLabel("0")
+gui.Add(container, label)
+
+// y CONTAINER
+// <int> yContainer := gui.NewContainer("vertical")
+
+// X CONTAINER BUTTONS
+array<int> xContainerBtn := {
+    gui.NewButton(" AC", buttonAction1("AC")),
+    gui.NewButton("DEL", buttonAction1("DEL")),
+    gui.NewButton(" % ", buttonAction1("%")),
+    gui.NewButton(" / ", buttonAction1("/")),
+    gui.NewButton(" 7 ", buttonAction1("7")),
+    gui.NewButton(" 8 ", buttonAction1("8")),
+    gui.NewButton(" 9 ", buttonAction1("9")),
+    gui.NewButton(" * ", buttonAction1("*")),
+    gui.NewButton(" 4 ", buttonAction1("4")),
+    gui.NewButton(" 5 ", buttonAction1("5")),
+    gui.NewButton(" 6 ", buttonAction1("6")),
+    gui.NewButton(" - ", buttonAction1("-")),
+    gui.NewButton(" 1 ", buttonAction1("1")),
+    gui.NewButton(" 2 ", buttonAction1("2")),
+    gui.NewButton(" 3 ", buttonAction1("3")),
+    gui.NewButton(" + ", buttonAction1("+")),
+    gui.NewButton("   ", buttonAction1(" ")),
+    gui.NewButton(" 0 ", buttonAction1("0")),
+    gui.NewButton(" , ", buttonAction1(",")),
+    gui.NewButton(" = ", buttonAction1("="))
+}
+<int> i := int(len(xContainerBtn) / 4)
+<int> acBtn := 0
+while i > 0
+    <int> xContainer1 := gui.NewContainer("horizontal")
+
+    <int> tmpI := 0
+    while tmpI < 4
+        tmpI += 1
+
+        <int> btn := xContainerBtn[acBtn]
+
+        acBtn += 1
+
+        gui.Add(xContainer1, btn)
+    end
+
+    gui.Add(container, xContainer1)
+
+    i -= 1
+end
+
+// LINE 1 BUTTON ACTIONS
+function buttonAction1(btn <str>) dynamic
+    global label
+    global gui
+    global strings
+    global math
+
+    dynamic action := (
+        function() <bool>
+            global btn
+            global label
+            global gui
+            global strings
+            global math
+
+            <str> labelText := gui.GetText(label)
+
+            if btn == "AC"
+                gui.SetText(label, "0")
+            else if btn == "DEL"
+                if len(labelText) < 2
+                    gui.SetText(label, "0")
+                else
+                    gui.SetText(label, strings.Slice(labelText, 0, len(labelText)-2))
+                end
+            else
+                if labelText == "0"
+                    gui.SetText(label, btn)
+                else
+                    gui.SetText(label, labelText.." "..btn)
+                end
+            end
+
+            return true
+        end
+    )
+    return action
+end
+
+gui.SetContent(window, container)
+gui.Show(window)
+
+// Evaluate - created by ChatGPT
+
+function evaluate(expr <str>) <float>
+    global strings
+    global math
+
+    // 1. Tokenizar
+    array<str> tokens := strings.Split(expr, " ")
+
+    // 2. Normalizar números (vírgula -> ponto)
+    <int> i := 0
+    while i < len(tokens)
+        if strings.Contains(tokens[i], ",")
+            tokens[i] = strings.Replace(tokens[i], ",", ".")
+        end
+        i += 1
+    end
+
+    // 3. Tratar porcentagem (n % => n / 100)
+    i = 0
+    while i < len(tokens)
+        if tokens[i] == "%"
+            <float> n := float(tokens[i-1])
+            <float> pct := n / 100.0
+            tokens[i-1] = string(pct)
+            tokens = strings.RemoveIndex(tokens, i) // remove "%"
+            i -= 1
+        end
+        i += 1
+    end
+
+    // 4. Primeira passada: * e /
+    array<str> pass1 := {"0"}
+    i = 0
+
+    while i < len(tokens)
+        <str> t := tokens[i]
+
+        if t == "*" or t == "/"
+            <float> a := float(pass1[len(pass1)-1])
+            <float> b := float(tokens[i+1])
+            <float> r := 0.0
+
+            if t == "*"
+                r = a * b
+            else
+                r = a / b
+            end
+
+            pass1[len(pass1)-1] = string(r)
+            i += 2
+        else
+            pass1 = strings.Push(pass1, t)
+            i += 1
+        end
+    end
+
+    // 5. Segunda passada: + e -
+    <float> result := float(pass1[0])
+    i = 1
+
+    while i < len(pass1)
+        <str> op := pass1[i]
+        <float> n := float(pass1[i+1])
+
+        if op == "+"
+            result = result + n
+        else if op == "-"
+            result = result - n
+        end
+
+        i += 2
+    end
+
+    return result
+end
+
