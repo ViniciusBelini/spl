@@ -161,7 +161,13 @@ func CompareOp(x, y interface{}, op string) (interface{}, error){
 			case "!=":
 				return x != y, nil
 			case "&&":
-				return x && y, nil
+				if x == false{
+					return false, nil
+				}
+				if y == false{
+					return false, nil
+				}
+				return true, nil
 			case "||":
 				return x || y, nil
 			default:

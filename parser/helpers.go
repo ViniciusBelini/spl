@@ -1,6 +1,7 @@
 package parser
 
 import(
+	// "fmt"
 	"SPL/models"
 )
 
@@ -37,7 +38,7 @@ func (p *Parser) GetBlock(fileName string, method string) []models.Token{
 			p.back()
 		}
 
-		p.generic("[SyntaxError] Missing 'end' of '"+method+"' statement", "S1005", fileName) // Error
+		p.generic("Missing 'end' of "+method+" statement", "S1005", fileName) // Error
 	}
 
 	return varBlock

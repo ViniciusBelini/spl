@@ -518,7 +518,7 @@ func isLiteral(token string) bool{
 
 // Verify if is a bloc with END delimiter
 func hasEndDelimiter(token string) bool{
-	if token == "if" || token == "while"{
+	if token == "if" || token == "while" || token == "function"{
 		return true
 	}
 

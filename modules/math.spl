@@ -1,4 +1,10 @@
+// STD Math Module
+
 function Rand(min <int>, max <int>) <int>
+    if min <= max
+        throw "[MathError] Minimum number must be lower then maximum"
+    end
+
     return __SYSTEM__math_rand(min, max)
 end
 
@@ -55,4 +61,18 @@ function IsInt(number <str>) <bool>
         return false
     end
     return true
+end
+
+function ToBinary(N <int>) <int>
+    if N <= 0
+        return 0
+    end
+
+    <str> t := ""
+    while N > 0
+        t = str(N % 2) .. t
+        N =  int(N / 2)
+    end
+
+    return int(t)
 end

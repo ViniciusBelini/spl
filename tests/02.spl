@@ -1,5 +1,3 @@
-import strings
+import math
 
-texto = "Hello, world!"
-
-print(strings.Replace(texto, "Hello", "Hi"))
+print(math.ToBinary(500))

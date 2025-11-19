@@ -234,6 +234,7 @@ func Run(aAst []ast.Node, outer *Env, fileName string, newEnvS bool) (interface{
 					}
 				}
 			case ast.BinaryOpNode:
+				/* BUG => LEFT and RIGHT cannot be executed until must be executed, like in && logic */
 				left, err := Run([]ast.Node{node.(ast.BinaryOpNode).Left}, env, fileName, false)
 				if err != nil{
 					return left, err

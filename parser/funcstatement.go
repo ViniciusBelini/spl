@@ -109,7 +109,11 @@ func (p *Parser) FuncStatement(fileName string) []ast.FuncStatement{
 		return FuncAST
 	}
 
-	funcBlock := p.GetBlock(fileName, "function")
+	methodName := "function"
+	if funcName != "__NULL_NAME__"{
+		methodName = "'"+funcName+"' function"
+	}
+	funcBlock := p.GetBlock(fileName, methodName)
 
 	// getFirst := func(nodes []ast.Node, returnFr bool) ast.Node{
 	// 	if len(nodes) > 0{
